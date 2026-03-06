@@ -18,10 +18,14 @@ model User {
   email     String   @unique
   password  String
   phone     String?
+  instagram String?
+  telegram  String?
   firstname String?
   lastname  String?
   role      Role
   posts     Post[]
+  orders    Order[]
+  reviews   Review[]
 }
 
 model Post {
@@ -33,6 +37,87 @@ model Post {
   content   String?
   authorId  String?
   author    User?    @relation(fields: [authorId], references: [id])
+}
+
+model Category {
+  id        String      @id @default(cuid())
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  name      String
+  slug      String      @unique
+  parentId  String?
+  parent    Category?   @relation("CategoryToSubcategories", fields: [parentId], references: [id])
+  children  Category[]  @relation("CategoryToSubcategories")
+  products  ProductCategory[]
+}
+
+model Product {
+  id             String            @id @default(cuid())
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  name           String
+  slug           String            @unique
+  price          Decimal
+  currency       String            @default("UAH")
+  shortDescription String?
+  description    String?
+  inStock        Boolean           @default(true)
+  stockQuantity  Int?              // null = не ведемо складський облік
+  mainImageUrl   String?
+  // для вітрини типу "CBD масло", "CBD WAX" і т.п.
+  label          String?           // виводимо як заголовок картки, якщо треба відрізняти від name
+
+  // зв’язки
+  categories     ProductCategory[]
+  orderItems     OrderItem[]
+  reviews        Review[]
+  ratingAverage  Float?   @default(0)
+  ratingCount    Int      @default(0)
+}
+
+model ProductCategory {
+  productId  String
+  categoryId String
+
+  product Product  @relation(fields: [productId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@id([productId, categoryId])
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+  total     Decimal
+  status    String   @default("NEW")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Decimal  // ціна на момент покупки
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  rating     Int
+  title      String?
+  text       String?
+  authorName String?
 }
 
 enum Role {

@@ -136,8 +136,12 @@ type Token {
 }
 
 input UpdateUserInput {
+  email: String
   firstname: String
+  instagram: String
   lastname: String
+  phone: String
+  telegram: String
 }
 
 type User {
@@ -146,10 +150,12 @@ type User {
   email: String!
   firstname: String
   id: ID!
+  instagram: String
   lastname: String
   phone: String
   posts: [Post!]
   role: Role!
+  telegram: String
 
   """Identifies the date and time when the object was last updated."""
   updatedAt: DateTime!

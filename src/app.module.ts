@@ -12,6 +12,7 @@ import config from './common/configs/config';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { GqlConfigService } from './gql-config.service';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { CatalogModule } from './catalog/catalog.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     AuthModule,
     UsersModule,
     PostsModule,
+    CatalogModule,
     CloudinaryModule,
   ],
   controllers: [AppController],

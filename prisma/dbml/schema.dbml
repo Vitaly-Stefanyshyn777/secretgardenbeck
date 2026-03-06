@@ -9,10 +9,13 @@ Table User {
   email String [unique, not null]
   password String [not null]
   phone String
+  instagram String
+  telegram String
   firstname String
   lastname String
   role Role [not null]
   posts Post [not null]
+  orders Order [not null]
 }
 
 Table Post {
@@ -26,9 +29,83 @@ Table Post {
   author User
 }
 
+Table Category {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  name String [not null]
+  slug String [unique, not null]
+  parentId String
+  parent Category
+  children Category [not null]
+  products ProductCategory [not null]
+}
+
+Table Product {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  name String [not null]
+  slug String [unique, not null]
+  price Decimal [not null]
+  currency String [not null, default: 'UAH']
+  shortDescription String
+  description String
+  inStock Boolean [not null, default: true]
+  stockQuantity Int
+  mainImageUrl String
+  label String
+  categories ProductCategory [not null]
+  orderItems OrderItem [not null]
+}
+
+Table ProductCategory {
+  productId String [not null]
+  categoryId String [not null]
+  product Product [not null]
+  category Category [not null]
+
+  indexes {
+    (productId, categoryId) [pk]
+  }
+}
+
+Table Order {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  userId String [not null]
+  user User [not null]
+  items OrderItem [not null]
+  total Decimal [not null]
+  status String [not null, default: 'NEW']
+}
+
+Table OrderItem {
+  id String [pk]
+  orderId String [not null]
+  order Order [not null]
+  productId String [not null]
+  product Product [not null]
+  quantity Int [not null]
+  price Decimal [not null]
+}
+
 Enum Role {
   ADMIN
   USER
 }
 
 Ref: Post.authorId > User.id
+
+Ref: Category.parentId - Category.id
+
+Ref: ProductCategory.productId > Product.id
+
+Ref: ProductCategory.categoryId > Category.id
+
+Ref: Order.userId > User.id
+
+Ref: OrderItem.orderId > Order.id
+
+Ref: OrderItem.productId > Product.id
