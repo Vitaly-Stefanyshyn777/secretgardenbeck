@@ -69,6 +69,9 @@ export class CatalogService {
             category: true,
           },
         },
+        characteristics: {
+          orderBy: { order: 'asc' },
+        },
       },
     });
 

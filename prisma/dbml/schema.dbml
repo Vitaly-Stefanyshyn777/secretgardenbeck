@@ -16,6 +16,7 @@ Table User {
   role Role [not null]
   posts Post [not null]
   orders Order [not null]
+  reviews Review [not null]
 }
 
 Table Post {
@@ -57,6 +58,19 @@ Table Product {
   label String
   categories ProductCategory [not null]
   orderItems OrderItem [not null]
+  reviews Review [not null]
+  characteristics ProductCharacteristic [not null]
+  ratingAverage Float [default: 0]
+  ratingCount Int [not null, default: 0]
+}
+
+Table ProductCharacteristic {
+  id String [pk]
+  productId String [not null]
+  product Product [not null]
+  name String [not null]
+  value String [not null]
+  order Int [not null, default: 0]
 }
 
 Table ProductCategory {
@@ -91,6 +105,20 @@ Table OrderItem {
   price Decimal [not null]
 }
 
+Table Review {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  productId String [not null]
+  product Product [not null]
+  userId String
+  user User
+  rating Int [not null]
+  title String
+  text String
+  authorName String
+}
+
 Enum Role {
   ADMIN
   USER
@@ -99,6 +127,8 @@ Enum Role {
 Ref: Post.authorId > User.id
 
 Ref: Category.parentId - Category.id
+
+Ref: ProductCharacteristic.productId > Product.id
 
 Ref: ProductCategory.productId > Product.id
 
@@ -109,3 +139,7 @@ Ref: Order.userId > User.id
 Ref: OrderItem.orderId > Order.id
 
 Ref: OrderItem.productId > Product.id
+
+Ref: Review.productId > Product.id
+
+Ref: Review.userId > User.id

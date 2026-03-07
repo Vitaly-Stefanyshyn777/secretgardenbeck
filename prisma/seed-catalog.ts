@@ -162,14 +162,61 @@ async function main() {
   const loremDescription =
     'Капсули з порошком червоного мухомора — вибір для тих, хто цінує натуральне походження та мінімалістичний склад. Продукт створений на основі ретельно підготовленої сировини без домішок та синтетичних добавок.';
 
+  const mikrodosingDescription =
+    'Капсули з порошком червоного мухомора — це вибір для тих, хто цінує натуральне походження, мінімалістичний склад і естетику усвідомленого підходу 🌿 Продукт створений на основі ретельно підготовленої сировини без домішок і синтетичних добавок. Делікатна обробка дозволяє зберегти природний склад гриба та його автентичні властивості в первинному вигляді. Формат капсул — це чистота, зручність і акуратність. Нічого зайвого: лише порошок природного походження в охайному, продуманому виконанні. Такий продукт органічно вписується у філософію релаксу, балансу та поваги до природних джерел 🍄 ✨ Мінімалістичний склад ✨ Натуральна сировина ✨ Без ароматизаторів та барвників ✨ Естетичний формат зберігання Це не про поспіх. Це про спокій, уважність і вибір якості.';
+
   // 1. Мікродозинг 100 капсул Червоний мухомор
-  await createProduct({
+  const mikrodosingProduct = await createProduct({
     slug: 'mikrodosing-100-kapsul-chervonyi-mukhomor',
     name: 'Мікродозинг 100 капсул Червоний мухомор',
     label: 'Мікродозинг Червоний мухомор',
     price: 1500,
-    description: loremDescription,
+    description: mikrodosingDescription,
     categoryIds: [allProducts.id, mushrooms.id, microdosing.id],
+  });
+
+  // Характеристики для цього товару (адмінка буде їх редагувати)
+  await prisma.productCharacteristic.deleteMany({
+    where: { productId: mikrodosingProduct.id },
+  });
+  await prisma.productCharacteristic.createMany({
+    data: [
+      { productId: mikrodosingProduct.id, name: 'Кількість капсул в упаковці', value: '60 капсул', order: 1 },
+      { productId: mikrodosingProduct.id, name: 'Вага однієї капсули', value: '0.7г', order: 2 },
+      { productId: mikrodosingProduct.id, name: 'Грам мухомору в одній капсулі', value: '0.5г', order: 3 },
+      { productId: mikrodosingProduct.id, name: 'Склад', value: '100% порошок сушеного червоного мухомору (Amanita muscaria)', order: 4 },
+      { productId: mikrodosingProduct.id, name: 'Біологічно активні сполуки', value: 'мусцимол, іботенова кислота (природні компоненти червоного мухомора)', order: 5 },
+      { productId: mikrodosingProduct.id, name: 'Умови зберігання', value: 'зберігати в сухому, недоступному для дітей місці', order: 6 },
+      { productId: mikrodosingProduct.id, name: 'Важливі застереження', value: 'не є лікарським засобом', order: 7 },
+    ],
+  });
+
+  // Тестові відгуки для цього товару
+  const reviewText =
+    'Lorem ipsum dolor sit amet consectetur. Sapien gravida posuere rhoncus duis amet sed in massa. Tempus at tellus fusce facilisis tellus et ac. Dolor eget proin aenean vitae. Proin senectus neque pellentesque ipsum venenatis.';
+  await prisma.review.deleteMany({ where: { productId: mikrodosingProduct.id } });
+  await prisma.review.createMany({
+    data: [
+      { productId: mikrodosingProduct.id, rating: 5, authorName: 'Гончаренко Катерина', text: reviewText },
+      { productId: mikrodosingProduct.id, rating: 5, authorName: 'Гончаренко Катерина', text: reviewText },
+      { productId: mikrodosingProduct.id, rating: 5, authorName: 'Гончаренко Катерина', text: reviewText },
+      { productId: mikrodosingProduct.id, rating: 5, authorName: 'Гончаренко Катерина', text: reviewText },
+      { productId: mikrodosingProduct.id, rating: 5, authorName: 'Гончаренко Катерина', text: reviewText },
+      { productId: mikrodosingProduct.id, rating: 5, authorName: 'Гончаренко Катерина', text: reviewText },
+      { productId: mikrodosingProduct.id, rating: 5, authorName: 'Гончаренко Катерина', text: reviewText },
+    ],
+  });
+  const agg = await prisma.review.aggregate({
+    where: { productId: mikrodosingProduct.id },
+    _avg: { rating: true },
+    _count: { rating: true },
+  });
+  await prisma.product.update({
+    where: { id: mikrodosingProduct.id },
+    data: {
+      ratingAverage: agg._avg.rating ?? 0,
+      ratingCount: agg._count.rating,
+    },
   });
 
   // 2. CBD масло 5%

@@ -68,11 +68,21 @@ model Product {
   label          String?           // виводимо як заголовок картки, якщо треба відрізняти від name
 
   // зв’язки
-  categories     ProductCategory[]
-  orderItems     OrderItem[]
-  reviews        Review[]
-  ratingAverage  Float?   @default(0)
-  ratingCount    Int      @default(0)
+  categories       ProductCategory[]
+  orderItems       OrderItem[]
+  reviews          Review[]
+  characteristics  ProductCharacteristic[]
+  ratingAverage    Float?   @default(0)
+  ratingCount      Int      @default(0)
+}
+
+model ProductCharacteristic {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  name      String   // назва характеристики, напр. "Кількість капсул в упаковці"
+  value     String   // значення, напр. "60 капсул"
+  order     Int      @default(0) // порядок виводу
 }
 
 model ProductCategory {
