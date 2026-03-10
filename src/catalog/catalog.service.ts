@@ -109,9 +109,9 @@ export class CatalogService {
     };
   }
 
-  async getProductBySlug(slug: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { slug },
+  async getProductBySlugOrId(slugOrId: string) {
+    let product = await this.prisma.product.findUnique({
+      where: { slug: slugOrId },
       include: {
         categories: {
           include: {
@@ -126,15 +126,36 @@ export class CatalogService {
         },
       },
     });
-
+    if (!product) {
+      product = await this.prisma.product.findUnique({
+        where: { id: slugOrId },
+        include: {
+          categories: {
+            include: {
+              category: true,
+            },
+          },
+          characteristics: {
+            orderBy: { order: 'asc' },
+          },
+          descriptionBlocks: {
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
+    }
     if (!product) {
       throw new NotFoundException('Product not found');
     }
-
     return {
       ...product,
       categories: product.categories.map((pc) => pc.category),
     };
+  }
+
+  /** @deprecated Use getProductBySlugOrId */
+  async getProductBySlug(slug: string) {
+    return this.getProductBySlugOrId(slug);
   }
 
   async getReviews(slug: string) {

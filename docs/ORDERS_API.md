@@ -59,7 +59,43 @@
 }
 ```
 
-Після створення замовлення кошик очищається.
+Після створення замовлення кошик очищається. Відповідь містить усі поля для order-success.
+
+---
+
+## GET /api/orders/:id
+
+Деталі замовлення для сторінки підтвердження (order-success). Потрібен JWT.
+
+**Відповідь:**
+```json
+{
+  "id": "clx...",
+  "createdAt": "2026-03-10T12:00:00.000Z",
+  "status": "NEW",
+  "firstName": "Іван",
+  "lastName": "Петренко",
+  "phone": "+380501234567",
+  "email": "ivan@example.com",
+  "recipient": "Марія Петренко",
+  "recipientPhone": "+380671234567",
+  "deliveryAddress": "Київ, Відділення №1",
+  "deliveryCity": "Київ",
+  "paymentLabel": "За тарифами \"Нової Пошти\"",
+  "subtotal": 1800,
+  "discountAmount": 0,
+  "deliveryCost": 80,
+  "total": 1880,
+  "items": [...]
+}
+```
+
+**Підставки для UI:**
+- `createdAt` — дата замовлення
+- `deliveryAddress` — "Відділення не вказано" якщо порожньо
+- `paymentLabel` — спосіб оплати
+- `recipient` — "Одержувач не вказаний" якщо порожньо
+- `phone` — контактний номер
 
 ---
 

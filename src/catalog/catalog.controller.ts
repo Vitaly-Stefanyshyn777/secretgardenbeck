@@ -21,10 +21,10 @@ export class CatalogController {
     return this.catalogService.getProducts(query);
   }
 
-  @Get('products/:slug')
-  @ApiOperation({ summary: 'Get product details by slug' })
-  getProduct(@Param('slug') slug: string) {
-    return this.catalogService.getProductBySlug(slug);
+  @Get('products/:slugOrId')
+  @ApiOperation({ summary: 'Get product details by slug or id' })
+  getProduct(@Param('slugOrId') slugOrId: string) {
+    return this.catalogService.getProductBySlugOrId(slugOrId);
   }
 
   @Get('products/:slug/reviews')

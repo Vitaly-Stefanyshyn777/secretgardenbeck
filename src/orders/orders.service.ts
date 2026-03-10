@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -115,20 +116,70 @@ export class OrdersService {
       return ord;
     });
 
+    return this.formatOrderResponse(order, subtotal);
+  }
+
+  private formatOrderResponse(order: any, subtotal?: number) {
+    const sub = subtotal ?? order.items?.reduce(
+      (s: number, i: any) => s + Number(i.price) * i.quantity,
+      0,
+    ) ?? 0;
+    const recipient =
+      order.recipientFirstName || order.recipientLastName
+        ? `${order.recipientFirstName ?? ''} ${order.recipientLastName ?? ''}`.trim() || 'Одержувач не вказаний'
+        : 'Одержувач не вказаний';
+    const deliveryAddress =
+      order.deliveryCity || order.deliveryAddress
+        ? [order.deliveryCity, order.deliveryAddress].filter(Boolean).join(', ')
+        : 'Відділення не вказано';
+    const paymentLabel =
+      order.deliveryMethod === 'nova_poshta'
+        ? 'За тарифами "Нової Пошти"'
+        : order.deliveryMethod ?? 'Не вказано';
+    const phoneLabel = order.phone || order.recipientPhone || 'Телефон не вказано';
+
     return {
       id: order.id,
+      createdAt: order.createdAt,
       status: order.status,
+      firstName: order.firstName,
+      lastName: order.lastName,
+      phone: order.phone,
+      phoneLabel,
+      email: order.email,
+      recipient,
+      recipientFirstName: order.recipientFirstName,
+      recipientLastName: order.recipientLastName,
+      recipientPhone: order.recipientPhone,
+      deliveryMethod: order.deliveryMethod,
+      deliveryAddress,
+      deliveryCity: order.deliveryCity,
+      comment: order.comment,
+      subtotal: sub,
+      discountAmount: Number(order.discountAmount ?? 0),
+      deliveryCost: Number(order.deliveryCost ?? 0),
       total: Number(order.total),
-      subtotal,
-      discountAmount: Number(order.discountAmount),
-      deliveryCost: Number(order.deliveryCost),
-      items: order.items.map((i) => ({
+      paymentLabel,
+      items: order.items?.map((i: any) => ({
         productId: i.productId,
         quantity: i.quantity,
         price: Number(i.price),
         product: i.product,
-      })),
+      })) ?? [],
     };
+  }
+
+  async findById(userId: string, orderId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, userId },
+      include: {
+        items: { include: { product: true } },
+      },
+    });
+    if (!order) {
+      throw new NotFoundException('Замовлення не знайдено');
+    }
+    return this.formatOrderResponse(order);
   }
 
   async findByUser(userId: string) {
@@ -139,12 +190,6 @@ export class OrdersService {
       },
       orderBy: { createdAt: 'desc' },
     });
-    return orders.map((o) => ({
-      id: o.id,
-      status: o.status,
-      total: Number(o.total),
-      createdAt: o.createdAt,
-      items: o.items,
-    }));
+    return orders.map((o) => this.formatOrderResponse(o));
   }
 }

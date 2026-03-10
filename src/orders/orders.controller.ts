@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { OrdersService } from './orders.service';
@@ -21,5 +21,11 @@ export class OrdersController {
   @ApiOperation({ summary: 'Список замовлень користувача' })
   findMyOrders(@Req() req: any) {
     return this.ordersService.findByUser(req.user.id);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Деталі замовлення (підтвердження)' })
+  findOne(@Req() req: any, @Param('id') id: string) {
+    return this.ordersService.findById(req.user.id, id);
   }
 }
