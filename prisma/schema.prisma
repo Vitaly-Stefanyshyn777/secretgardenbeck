@@ -26,6 +26,36 @@ model User {
   posts     Post[]
   orders    Order[]
   reviews   Review[]
+  viewedProducts UserViewedProduct[]
+  cartItems     CartItem[]
+  wishlist      UserWishlist[]
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  quantity  Int      @default(1)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  @@unique([userId, productId])
+}
+
+model UserWishlist {
+  userId    String
+  productId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  @@id([userId, productId])
+}
+
+model UserViewedProduct {
+  userId    String   // зовнішній ключ на користувача
+  productId String   // зовнішній ключ на товар
+  viewedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  @@id([userId, productId])
 }
 
 model Post {
@@ -49,6 +79,29 @@ model Category {
   parent    Category?   @relation("CategoryToSubcategories", fields: [parentId], references: [id])
   children  Category[]  @relation("CategoryToSubcategories")
   products  ProductCategory[]
+  filters   CategoryFilter[]
+}
+
+model CategoryFilter {
+  id         String   @id @default(cuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  name       String   // Тип, Матеріал, Виробник
+  slug       String   // type, material, manufacturer (для query-параметрів)
+  order      Int      @default(0)
+  values     CategoryFilterValue[]
+}
+
+model CategoryFilterValue {
+  id           String   @id @default(cuid())
+  filterId     String
+  filter       CategoryFilter @relation(fields: [filterId], references: [id])
+  value        String   // RAW, Phoenix, Backwoods
+  slug         String   // raw, phoenix, backwoods (унікальний в межах фільтра)
+  order        Int      @default(0)
+  productLinks ProductFilterValue[]
+
+  @@unique([filterId, slug])
 }
 
 model Product {
@@ -68,12 +121,35 @@ model Product {
   label          String?           // виводимо як заголовок картки, якщо треба відрізняти від name
 
   // зв’язки
-  categories       ProductCategory[]
-  orderItems       OrderItem[]
-  reviews          Review[]
-  characteristics  ProductCharacteristic[]
-  ratingAverage    Float?   @default(0)
-  ratingCount      Int      @default(0)
+  categories         ProductCategory[]
+  orderItems         OrderItem[]
+  reviews            Review[]
+  characteristics    ProductCharacteristic[]
+  filterValues       ProductFilterValue[]
+  descriptionBlocks  ProductDescriptionBlock[]
+  viewedBy           UserViewedProduct[]
+  cartItems          CartItem[]
+  wishlist           UserWishlist[]
+  ratingAverage      Float?   @default(0)
+  ratingCount        Int      @default(0)
+}
+
+model ProductDescriptionBlock {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  type      String   // paragraph | list | heading
+  content   String?  // текст для paragraph/heading
+  items     Json?    // масив рядків для type=list
+  order     Int      @default(0)
+}
+
+model ProductFilterValue {
+  productId     String
+  filterValueId String
+  product       Product @relation(fields: [productId], references: [id])
+  filterValue   CategoryFilterValue @relation(fields: [filterValueId], references: [id])
+  @@id([productId, filterValueId])
 }
 
 model ProductCharacteristic {

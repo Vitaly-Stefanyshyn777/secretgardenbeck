@@ -17,6 +17,45 @@ Table User {
   posts Post [not null]
   orders Order [not null]
   reviews Review [not null]
+  viewedProducts UserViewedProduct [not null]
+  cartItems CartItem [not null]
+  wishlist UserWishlist [not null]
+}
+
+Table CartItem {
+  id String [pk]
+  userId String [not null]
+  productId String [not null]
+  quantity Int [not null, default: 1]
+  user User [not null]
+  product Product [not null]
+
+  indexes {
+    (userId, productId) [unique]
+  }
+}
+
+Table UserWishlist {
+  userId String [not null]
+  productId String [not null]
+  user User [not null]
+  product Product [not null]
+
+  indexes {
+    (userId, productId) [pk]
+  }
+}
+
+Table UserViewedProduct {
+  userId String [not null]
+  productId String [not null]
+  viewedAt DateTime [default: `now()`, not null]
+  user User [not null]
+  product Product [not null]
+
+  indexes {
+    (userId, productId) [pk]
+  }
 }
 
 Table Post {
@@ -40,6 +79,31 @@ Table Category {
   parent Category
   children Category [not null]
   products ProductCategory [not null]
+  filters CategoryFilter [not null]
+}
+
+Table CategoryFilter {
+  id String [pk]
+  categoryId String [not null]
+  category Category [not null]
+  name String [not null]
+  slug String [not null]
+  order Int [not null, default: 0]
+  values CategoryFilterValue [not null]
+}
+
+Table CategoryFilterValue {
+  id String [pk]
+  filterId String [not null]
+  filter CategoryFilter [not null]
+  value String [not null]
+  slug String [not null]
+  order Int [not null, default: 0]
+  productLinks ProductFilterValue [not null]
+
+  indexes {
+    (filterId, slug) [unique]
+  }
 }
 
 Table Product {
@@ -60,8 +124,34 @@ Table Product {
   orderItems OrderItem [not null]
   reviews Review [not null]
   characteristics ProductCharacteristic [not null]
+  filterValues ProductFilterValue [not null]
+  descriptionBlocks ProductDescriptionBlock [not null]
+  viewedBy UserViewedProduct [not null]
+  cartItems CartItem [not null]
+  wishlist UserWishlist [not null]
   ratingAverage Float [default: 0]
   ratingCount Int [not null, default: 0]
+}
+
+Table ProductDescriptionBlock {
+  id String [pk]
+  productId String [not null]
+  product Product [not null]
+  type String [not null]
+  content String
+  items Json
+  order Int [not null, default: 0]
+}
+
+Table ProductFilterValue {
+  productId String [not null]
+  filterValueId String [not null]
+  product Product [not null]
+  filterValue CategoryFilterValue [not null]
+
+  indexes {
+    (productId, filterValueId) [pk]
+  }
 }
 
 Table ProductCharacteristic {
@@ -124,9 +214,31 @@ Enum Role {
   USER
 }
 
+Ref: CartItem.userId > User.id [delete: Cascade]
+
+Ref: CartItem.productId > Product.id [delete: Cascade]
+
+Ref: UserWishlist.userId > User.id [delete: Cascade]
+
+Ref: UserWishlist.productId > Product.id [delete: Cascade]
+
+Ref: UserViewedProduct.userId > User.id [delete: Cascade]
+
+Ref: UserViewedProduct.productId > Product.id [delete: Cascade]
+
 Ref: Post.authorId > User.id
 
 Ref: Category.parentId - Category.id
+
+Ref: CategoryFilter.categoryId > Category.id
+
+Ref: CategoryFilterValue.filterId > CategoryFilter.id
+
+Ref: ProductDescriptionBlock.productId > Product.id
+
+Ref: ProductFilterValue.productId > Product.id
+
+Ref: ProductFilterValue.filterValueId > CategoryFilterValue.id
 
 Ref: ProductCharacteristic.productId > Product.id
 

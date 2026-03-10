@@ -13,6 +13,9 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { GqlConfigService } from './gql-config.service';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { CatalogModule } from './catalog/catalog.module';
+import { ViewedModule } from './viewed/viewed.module';
+import { CartModule } from './cart/cart.module';
+import { WishlistModule } from './wishlist/wishlist.module';
 
 @Module({
   imports: [
@@ -40,6 +43,9 @@ import { CatalogModule } from './catalog/catalog.module';
     PostsModule,
     CatalogModule,
     CloudinaryModule,
+    ViewedModule,
+    CartModule,
+    WishlistModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppResolver],

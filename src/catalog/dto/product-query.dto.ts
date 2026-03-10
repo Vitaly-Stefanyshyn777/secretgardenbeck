@@ -18,5 +18,22 @@ export class ProductQueryDto {
   @IsInt()
   @IsPositive()
   limit?: number = 12;
+
+  /** Фільтри: slug фільтра = значення через кому */
+  @IsOptional()
+  @IsString()
+  cannabinoid?: string;
+
+  @IsOptional()
+  @IsString()
+  manufacturer?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
+
+  @IsOptional()
+  @IsString()
+  material?: string;
 }
 

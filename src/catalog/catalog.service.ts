@@ -10,7 +10,24 @@ export class CatalogService {
   async getCategories() {
     return this.prisma.category.findMany({
       where: { parentId: null },
-      include: { children: true },
+      include: {
+        children: {
+          include: {
+            filters: {
+              orderBy: { order: 'asc' },
+              include: {
+                values: { orderBy: { order: 'asc' } },
+              },
+            },
+          },
+        },
+        filters: {
+          orderBy: { order: 'asc' },
+          include: {
+            values: { orderBy: { order: 'asc' } },
+          },
+        },
+      },
       orderBy: { name: 'asc' },
     });
   }
@@ -37,6 +54,38 @@ export class CatalogService {
           },
         },
       };
+    }
+
+    // Фільтри за значеннями (cannabinoid, manufacturer, type, material тощо)
+    const filterParams = [
+      { key: 'cannabinoid' as const, val: query.cannabinoid },
+      { key: 'manufacturer' as const, val: query.manufacturer },
+      { key: 'type' as const, val: query.type },
+      { key: 'material' as const, val: query.material },
+    ] as const;
+    const filterConditions: any[] = [];
+    for (const { key, val } of filterParams) {
+      if (!val?.trim()) continue;
+      const slugs = val
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+      if (slugs.length === 0) continue;
+      filterConditions.push({
+        filterValues: {
+          some: {
+            filterValue: {
+              slug: { in: slugs },
+              filter: { slug: key },
+            },
+          },
+        },
+      });
+    }
+    if (filterConditions.length > 0) {
+      where.AND = where.AND
+        ? [...where.AND, ...filterConditions]
+        : filterConditions;
     }
 
     const [items, total] = await this.prisma.$transaction([
@@ -72,6 +121,9 @@ export class CatalogService {
         characteristics: {
           orderBy: { order: 'asc' },
         },
+        descriptionBlocks: {
+          orderBy: { order: 'asc' },
+        },
       },
     });
 
@@ -102,9 +154,7 @@ export class CatalogService {
 
     const total = reviews.length;
     const ratingAverage =
-      total === 0
-        ? 0
-        : reviews.reduce((sum, r) => sum + r.rating, 0) / total;
+      total === 0 ? 0 : reviews.reduce((sum, r) => sum + r.rating, 0) / total;
 
     return {
       items: reviews,
@@ -150,4 +200,3 @@ export class CatalogService {
     return review;
   }
 }
-

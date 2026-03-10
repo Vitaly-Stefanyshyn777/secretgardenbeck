@@ -111,6 +111,77 @@ async function main() {
     },
   });
 
+  // Фільтри для категорій — кожен має заголовок (name) і чекбокси (values)
+  await prisma.productFilterValue.deleteMany({
+    where: { filterValue: { filter: { categoryId: cbdOil.id } } },
+  });
+  await prisma.categoryFilterValue.deleteMany({
+    where: { filter: { categoryId: cbdOil.id } },
+  });
+  await prisma.categoryFilter.deleteMany({ where: { categoryId: cbdOil.id } });
+  const cannabinoidFilter = await prisma.categoryFilter.create({
+    data: {
+      categoryId: cbdOil.id,
+      name: 'Канобіноїд',
+      slug: 'cannabinoid',
+      order: 0,
+      values: {
+        create: [
+          { value: 'CBD', slug: 'cbd', order: 1 },
+          { value: 'CBG', slug: 'cbg', order: 2 },
+          { value: 'CBN', slug: 'cbn', order: 3 },
+          { value: 'CBGA', slug: 'cbga', order: 4 },
+          { value: 'H4CBD', slug: 'h4cbd', order: 5 },
+        ],
+      },
+    },
+    include: { values: true },
+  });
+  const manufacturerFilter = await prisma.categoryFilter.create({
+    data: {
+      categoryId: cbdOil.id,
+      name: 'Виробник',
+      slug: 'manufacturer',
+      order: 2,
+      values: {
+        create: [
+          { value: 'RAW', slug: 'raw', order: 1 },
+          { value: 'Phoenix', slug: 'phoenix', order: 2 },
+          { value: 'Backwoods', slug: 'backwoods', order: 3 },
+        ],
+      },
+    },
+    include: { values: true },
+  });
+  await prisma.categoryFilter.create({
+    data: {
+      categoryId: cbdOil.id,
+      name: 'Тип',
+      slug: 'type',
+      order: 1,
+      values: {
+        create: [
+          { value: 'Органічний', slug: 'organic', order: 1 },
+          { value: 'Звичайний', slug: 'regular', order: 2 },
+        ],
+      },
+    },
+  });
+  await prisma.categoryFilter.create({
+    data: {
+      categoryId: cbdOil.id,
+      name: 'Матеріал',
+      slug: 'material',
+      order: 3,
+      values: {
+        create: [
+          { value: 'Скло', slug: 'glass', order: 1 },
+          { value: 'Пластик', slug: 'plastic', order: 2 },
+        ],
+      },
+    },
+  });
+
   // Helper to create product and link to categories
   const createProduct = async (data: {
     slug: string;
@@ -175,6 +246,54 @@ async function main() {
     categoryIds: [allProducts.id, mushrooms.id, microdosing.id],
   });
 
+  // Структуровані блоки опису (для окремого відмальовування на фронті)
+  await prisma.productDescriptionBlock.deleteMany({
+    where: { productId: mikrodosingProduct.id },
+  });
+  await prisma.productDescriptionBlock.createMany({
+    data: [
+      {
+        productId: mikrodosingProduct.id,
+        type: 'paragraph',
+        content:
+          'Капсули з порошком червоного мухомора — це вибір для тих, хто цінує натуральне походження, мінімалістичний склад і естетику усвідомленого підходу 🌿',
+        order: 1,
+      },
+      {
+        productId: mikrodosingProduct.id,
+        type: 'paragraph',
+        content:
+          'Продукт створений на основі ретельно підготовленої сировини без домішок і синтетичних добавок. Делікатна обробка дозволяє зберегти природний склад гриба та його автентичні властивості в первинному вигляді.',
+        order: 2,
+      },
+      {
+        productId: mikrodosingProduct.id,
+        type: 'paragraph',
+        content:
+          'Формат капсул — це чистота, зручність і акуратність. Нічого зайвого: лише порошок природного походження в охайному, продуманому виконанні. Такий продукт органічно вписується у філософію релаксу, балансу та поваги до природних джерел 🍄',
+        order: 3,
+      },
+      {
+        productId: mikrodosingProduct.id,
+        type: 'list',
+        items: [
+          'Мінімалістичний склад',
+          'Натуральна сировина',
+          'Без ароматизаторів та барвників',
+          'Естетичний формат зберігання',
+        ],
+        order: 4,
+      },
+      {
+        productId: mikrodosingProduct.id,
+        type: 'paragraph',
+        content:
+          'Це не про поспіх. Це про спокій, уважність і вибір якості.',
+        order: 5,
+      },
+    ],
+  });
+
   // Характеристики для цього товару (адмінка буде їх редагувати)
   await prisma.productCharacteristic.deleteMany({
     where: { productId: mikrodosingProduct.id },
@@ -220,7 +339,7 @@ async function main() {
   });
 
   // 2. CBD масло 5%
-  await createProduct({
+  const oil5 = await createProduct({
     slug: 'cbd-oil-5',
     name: 'CBD масло 5%',
     label: 'CBD масло',
@@ -230,7 +349,7 @@ async function main() {
   });
 
   // 3. CBD масло 10%
-  await createProduct({
+  const oil10 = await createProduct({
     slug: 'cbd-oil-10',
     name: 'CBD масло 10%',
     label: 'CBD масло',
@@ -238,6 +357,25 @@ async function main() {
     description: loremDescription,
     categoryIds: [allProducts.id, cbdOil.id, cbdOilCbd.id],
   });
+
+  // Прив'язка товарів до фільтрів
+  const cbdVal = cannabinoidFilter.values.find((v) => v.slug === 'cbd')!;
+  const cbgVal = cannabinoidFilter.values.find((v) => v.slug === 'cbg')!;
+  const rawVal = manufacturerFilter.values.find((v) => v.slug === 'raw')!;
+  const phoenixVal = manufacturerFilter.values.find((v) => v.slug === 'phoenix')!;
+  await prisma.productFilterValue.createMany({
+    data: [
+      { productId: oil5.id, filterValueId: cbdVal.id },
+      { productId: oil5.id, filterValueId: rawVal.id },
+      { productId: oil10.id, filterValueId: cbdVal.id },
+      { productId: oil10.id, filterValueId: phoenixVal.id },
+    ],
+  });
+  // CBG масла
+  const oilCbg5 = await prisma.product.findUnique({ where: { slug: 'cbd-oil-cbg-5' } });
+  const oilCbg10 = await prisma.product.findUnique({ where: { slug: 'cbd-oil-cbg-10' } });
+  if (oilCbg5) await prisma.productFilterValue.create({ data: { productId: oilCbg5.id, filterValueId: cbgVal.id } });
+  if (oilCbg10) await prisma.productFilterValue.create({ data: { productId: oilCbg10.id, filterValueId: cbgVal.id } });
 
   // Add more products under CBD oil subcategories (2/3/5/9)
   const mkOil = (slug: string, name: string, price: number, categoryId: string) =>
