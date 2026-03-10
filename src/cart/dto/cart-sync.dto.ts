@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -9,12 +10,19 @@ import {
 import { Transform, Type } from 'class-transformer';
 
 export class CartItemDto {
-  @Transform(({ obj }) => obj.productId ?? obj.product_id)
+  /** ID товару — string (WooCommerce "123" або CUID "clx...") */
+  @IsOptional()
+  @Transform(({ value }) => (value != null ? String(value).trim() : undefined))
   @IsString()
-  productId: string;
+  productId?: string;
+
+  /** fallback: slug товару, якщо productId немає */
+  @IsOptional()
+  @IsString()
+  slug?: string;
 
   @IsOptional()
-  @IsInt()
+  @IsNumber()
   @Min(1)
   quantity?: number = 1;
 }

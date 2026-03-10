@@ -31,17 +31,33 @@ export class CartService {
     };
   }
 
-  async syncCart(userId: string, items: { productId: string; quantity?: number }[]) {
+  async syncCart(
+    userId: string,
+    items: Array<{ productId?: string; slug?: string; quantity?: number }>,
+  ) {
     try {
       const valid: { productId: string; quantity: number }[] = [];
       for (const item of items) {
-        if (!item?.productId) continue;
-        const product = await this.prisma.product.findUnique({
-          where: { id: item.productId },
-          select: { id: true },
-        });
-        if (product && (item.quantity ?? 1) > 0) {
-          valid.push({ productId: item.productId, quantity: item.quantity ?? 1 });
+        const qty = item.quantity ?? 1;
+        if (qty < 1) continue;
+
+        let productId: string | null = null;
+        if (item.productId) {
+          const p = await this.prisma.product.findUnique({
+            where: { id: item.productId },
+            select: { id: true },
+          });
+          productId = p?.id ?? null;
+        }
+        if (!productId && item.slug) {
+          const p = await this.prisma.product.findUnique({
+            where: { slug: item.slug },
+            select: { id: true },
+          });
+          productId = p?.id ?? null;
+        }
+        if (productId) {
+          valid.push({ productId, quantity: qty });
         }
       }
 

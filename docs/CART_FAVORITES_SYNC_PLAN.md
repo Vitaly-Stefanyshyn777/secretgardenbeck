@@ -22,10 +22,16 @@
 {
   "items": [
     { "productId": "clx...", "quantity": 2 },
-    { "productId": "cly...", "quantity": 1 }
+    { "productId": "123", "quantity": 1 },
+    { "slug": "cbd-oil-5", "quantity": 1 }
   ]
 }
 ```
+**Контракт productId:** завжди string
+- WooCommerce: числовий id як рядок ("123")
+- Каталог (CUID): рядок ("clxxxxxxxxxxxxxxxx")
+- Бекенд приймає і number, і string — @Transform перетворює на string
+- Якщо немає productId — використовується slug
 
 **Відповідь:**
 ```json

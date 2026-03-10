@@ -23,10 +23,14 @@ export class CartController {
     const items = Array.isArray(data?.items) ? data.items : [];
     return this.cartService.syncCart(
       req.user.id,
-      items.map((i) => ({
-        productId: i.productId ?? (i as any).product_id ?? '',
-        quantity: i.quantity ?? 1,
-      })),
+      items.map((i) => {
+        const pid = i.productId ?? (i as any).product_id;
+        return {
+          productId: pid != null ? String(pid).trim() : undefined,
+          slug: i.slug ?? (i as any).product_slug,
+          quantity: i.quantity ?? 1,
+        };
+      }),
     );
   }
 }
