@@ -53,12 +53,20 @@
 | GET | /api/wishlist | Отримати wishlist (потрібен JWT) |
 | POST | /api/wishlist/sync | Batch sync — замінити весь wishlist (потрібен JWT) |
 
-**POST /api/wishlist/sync** — тіло:
+**POST /api/wishlist/sync** — тіло (формат як корзина):
 ```json
 {
-  "productIds": ["clx...", "cly...", "clz..."]
+  "items": [
+    { "productId": "clx..." },
+    { "slug": "cbd-oil-5" }
+  ]
 }
 ```
+Або застарілий формат: `{ "productIds": ["clx...", "cly..."] }`
+
+- `productId` (string) — CUID або WooCommerce id як рядок
+- `slug` (string) — fallback, якщо productId немає
+- @Transform перетворює number → string для productId
 
 **Відповідь:**
 ```json

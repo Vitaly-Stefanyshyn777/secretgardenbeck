@@ -180,6 +180,26 @@ model Order {
   items     OrderItem[]
   total     Decimal
   status    String   @default("NEW")
+
+  // Особисті дані (обов'язкові для нових замовлень)
+  firstName  String?
+  lastName   String?
+  phone      String?
+  email      String?
+  // Отримувати буде інша людина
+  recipientFirstName String?
+  recipientLastName  String?
+  recipientPhone     String?
+  // Доставка
+  deliveryMethod  String?  // nova_poshta, ukr_poshta, ...
+  deliveryCity    String?
+  deliveryAddress String?
+  // Інше
+  comment         String?
+  newsletterConsent Boolean @default(false)
+  termsAccepted   Boolean  @default(false)
+  discountAmount  Decimal  @default(0)
+  deliveryCost    Decimal  @default(0)
 }
 
 model OrderItem {

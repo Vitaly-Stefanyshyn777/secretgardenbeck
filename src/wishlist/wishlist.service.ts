@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 
 @Injectable()
 export class WishlistService {
+  private readonly logger = new Logger(WishlistService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getWishlist(userId: string) {
@@ -29,22 +31,53 @@ export class WishlistService {
     };
   }
 
-  async syncWishlist(userId: string, productIds: string[]) {
-    const existing = await this.prisma.product.findMany({
-      where: { id: { in: productIds } },
-      select: { id: true },
-    });
-    const validIds = existing.map((p) => p.id);
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.userWishlist.deleteMany({ where: { userId } });
-      if (validIds.length > 0) {
-        await tx.userWishlist.createMany({
-          data: validIds.map((productId) => ({ userId, productId })),
-        });
+  async syncWishlist(
+    userId: string,
+    items: Array<{ productId?: string; slug?: string }>,
+  ) {
+    try {
+      const validIds: string[] = [];
+      for (const item of items) {
+        let productId: string | null = null;
+        if (item.productId) {
+          const p = await this.prisma.product.findUnique({
+            where: { id: item.productId },
+            select: { id: true },
+          });
+          productId = p?.id ?? null;
+        }
+        if (!productId && item.slug) {
+          const p = await this.prisma.product.findUnique({
+            where: { slug: item.slug },
+            select: { id: true },
+          });
+          productId = p?.id ?? null;
+        }
+        if (productId && !validIds.includes(productId)) {
+          validIds.push(productId);
+        }
       }
-    });
 
-    return this.getWishlist(userId);
+      if (items.length > 0 && validIds.length === 0) {
+        this.logger.warn(
+          `[Wishlist Sync] Отримано ${items.length} item(s), жоден не знайдено в каталозі. ` +
+            `Приклад: ${JSON.stringify(items.slice(0, 2))}`,
+        );
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.userWishlist.deleteMany({ where: { userId } });
+        if (validIds.length > 0) {
+          await tx.userWishlist.createMany({
+            data: validIds.map((productId) => ({ userId, productId })),
+          });
+        }
+      });
+
+      return this.getWishlist(userId);
+    } catch (err) {
+      this.logger.error('Wishlist sync failed', err);
+      throw err;
+    }
   }
 }

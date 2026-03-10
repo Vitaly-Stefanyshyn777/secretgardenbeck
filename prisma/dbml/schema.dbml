@@ -183,6 +183,21 @@ Table Order {
   items OrderItem [not null]
   total Decimal [not null]
   status String [not null, default: 'NEW']
+  firstName String
+  lastName String
+  phone String
+  email String
+  recipientFirstName String
+  recipientLastName String
+  recipientPhone String
+  deliveryMethod String
+  deliveryCity String
+  deliveryAddress String
+  comment String
+  newsletterConsent Boolean [not null, default: false]
+  termsAccepted Boolean [not null, default: false]
+  discountAmount Decimal [not null, default: 0]
+  deliveryCost Decimal [not null, default: 0]
 }
 
 Table OrderItem {

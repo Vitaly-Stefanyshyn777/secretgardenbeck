@@ -16,6 +16,7 @@ import { CatalogModule } from './catalog/catalog.module';
 import { ViewedModule } from './viewed/viewed.module';
 import { CartModule } from './cart/cart.module';
 import { WishlistModule } from './wishlist/wishlist.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     ViewedModule,
     CartModule,
     WishlistModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppResolver],

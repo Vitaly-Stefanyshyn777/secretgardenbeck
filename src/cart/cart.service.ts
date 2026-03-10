@@ -19,15 +19,29 @@ export class CartService {
       },
     });
 
+    const mapped = items.map((i) => ({
+      productId: i.productId,
+      quantity: i.quantity,
+      name: i.product.name,
+      price: Number(i.product.price),
+      mainImageUrl: i.product.mainImageUrl,
+      product: {
+        ...i.product,
+        categories: i.product.categories.map((pc) => pc.category),
+      },
+    }));
+
+    const total = mapped.reduce(
+      (sum, i) => sum + i.price * i.quantity,
+      0,
+    );
+    const currency = items[0]?.product?.currency ?? 'UAH';
+
     return {
-      items: items.map((i) => ({
-        productId: i.productId,
-        quantity: i.quantity,
-        product: {
-          ...i.product,
-          categories: i.product.categories.map((pc) => pc.category),
-        },
-      })),
+      items: mapped,
+      items_count: mapped.length,
+      total,
+      currency,
     };
   }
 
@@ -59,6 +73,13 @@ export class CartService {
         if (productId) {
           valid.push({ productId, quantity: qty });
         }
+      }
+
+      if (items.length > 0 && valid.length === 0) {
+        this.logger.warn(
+          `[Cart Sync] Отримано ${items.length} item(s), жоден не знайдено в каталозі. ` +
+            `Приклад: ${JSON.stringify(items.slice(0, 2))}`,
+        );
       }
 
       await this.prisma.$transaction(async (tx) => {
