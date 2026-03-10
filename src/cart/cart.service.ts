@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 
 @Injectable()
 export class CartService {
+  private readonly logger = new Logger(CartService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getCart(userId: string) {
@@ -30,32 +32,38 @@ export class CartService {
   }
 
   async syncCart(userId: string, items: { productId: string; quantity?: number }[]) {
-    const valid: { productId: string; quantity: number }[] = [];
-    for (const item of items) {
-      const product = await this.prisma.product.findUnique({
-        where: { id: item.productId },
-        select: { id: true },
-      });
-      if (product && (item.quantity ?? 1) > 0) {
-        valid.push({ productId: item.productId, quantity: item.quantity ?? 1 });
-      }
-    }
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.cartItem.deleteMany({ where: { userId } });
-      if (valid.length > 0) {
-        for (const { productId, quantity } of valid) {
-          await tx.cartItem.upsert({
-            where: {
-              userId_productId: { userId, productId },
-            },
-            create: { userId, productId, quantity },
-            update: { quantity },
-          });
+    try {
+      const valid: { productId: string; quantity: number }[] = [];
+      for (const item of items) {
+        if (!item?.productId) continue;
+        const product = await this.prisma.product.findUnique({
+          where: { id: item.productId },
+          select: { id: true },
+        });
+        if (product && (item.quantity ?? 1) > 0) {
+          valid.push({ productId: item.productId, quantity: item.quantity ?? 1 });
         }
       }
-    });
 
-    return this.getCart(userId);
+      await this.prisma.$transaction(async (tx) => {
+        await tx.cartItem.deleteMany({ where: { userId } });
+        if (valid.length > 0) {
+          for (const { productId, quantity } of valid) {
+            await tx.cartItem.upsert({
+              where: {
+                userId_productId: { userId, productId },
+              },
+              create: { userId, productId, quantity },
+              update: { quantity },
+            });
+          }
+        }
+      });
+
+      return this.getCart(userId);
+    } catch (err) {
+      this.logger.error('Cart sync failed', err);
+      throw err;
+    }
   }
 }

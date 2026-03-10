@@ -20,9 +20,13 @@ export class CartController {
   @Post('sync')
   @ApiOperation({ summary: 'Batch sync cart (replace entire cart)' })
   syncCart(@Req() req: any, @Body() data: CartSyncDto) {
+    const items = Array.isArray(data?.items) ? data.items : [];
     return this.cartService.syncCart(
       req.user.id,
-      data.items.map((i) => ({ productId: i.productId, quantity: i.quantity ?? 1 })),
+      items.map((i) => ({
+        productId: i.productId ?? (i as any).product_id ?? '',
+        quantity: i.quantity ?? 1,
+      })),
     );
   }
 }

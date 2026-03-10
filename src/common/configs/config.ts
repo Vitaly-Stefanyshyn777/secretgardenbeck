@@ -21,8 +21,8 @@ const config: Config = {
     sortSchema: true,
   },
   security: {
-    expiresIn: '2m',
-    refreshIn: '7d',
+    expiresIn: '30d', // TODO PROD: змінити на 15m
+    refreshIn: '90d', // TODO PROD: змінити на 7d
     bcryptSaltOrRound: 10,
   },
 };
