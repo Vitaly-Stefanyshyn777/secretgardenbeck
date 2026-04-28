@@ -1,11 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 
+// Тимчасове рішення: дефолтне фото для карток, поки не налаштовані
+// завантаження/прив’язка зображень для кожного товару окремо.
+const TEMP_DEFAULT_PRODUCT_IMAGE_URL =
+  'https://res.cloudinary.com/dhcqvesyr/image/upload/v1777366777/Rectangle_4_rbucbx.png';
+
 @Injectable()
 export class WishlistService {
   private readonly logger = new Logger(WishlistService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  private withDefaultImage<T extends { mainImageUrl?: string | null }>(item: T): T {
+    if (item.mainImageUrl) return item;
+    return { ...item, mainImageUrl: TEMP_DEFAULT_PRODUCT_IMAGE_URL };
+  }
 
   async getWishlist(userId: string) {
     const items = await this.prisma.userWishlist.findMany({
@@ -23,7 +33,7 @@ export class WishlistService {
       items: items.map((i) => ({
         productId: i.productId,
         product: {
-          ...i.product,
+          ...this.withDefaultImage(i.product),
           categories: i.product.categories.map((pc) => pc.category),
         },
       })),

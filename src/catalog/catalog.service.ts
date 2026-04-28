@@ -3,9 +3,21 @@ import { PrismaService } from 'nestjs-prisma';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 
+// Тимчасове рішення: дефолтне фото для карток, поки не налаштовані
+// завантаження/прив’язка зображень для кожного товару окремо.
+const TEMP_DEFAULT_PRODUCT_IMAGE_URL =
+  'https://res.cloudinary.com/dhcqvesyr/image/upload/v1777366777/Rectangle_4_rbucbx.png';
+
 @Injectable()
 export class CatalogService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private withDefaultImage<T extends { mainImageUrl?: string | null }>(
+    item: T,
+  ): T {
+    if (item.mainImageUrl) return item;
+    return { ...item, mainImageUrl: TEMP_DEFAULT_PRODUCT_IMAGE_URL };
+  }
 
   async getCategories() {
     return this.prisma.category.findMany({
@@ -101,7 +113,7 @@ export class CatalogService {
     const pages = Math.ceil(total / limit) || 1;
 
     return {
-      items,
+      items: items.map((p) => this.withDefaultImage(p)),
       page,
       limit,
       total,
@@ -148,7 +160,7 @@ export class CatalogService {
       throw new NotFoundException('Product not found');
     }
     return {
-      ...product,
+      ...this.withDefaultImage(product),
       categories: product.categories.map((pc) => pc.category),
     };
   }
