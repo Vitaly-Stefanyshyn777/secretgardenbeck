@@ -12,11 +12,22 @@ const TEMP_DEFAULT_PRODUCT_IMAGE_URL =
 export class CatalogService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private withDefaultImage<T extends { mainImageUrl?: string | null }>(
-    item: T,
-  ): T {
-    if (item.mainImageUrl) return item;
-    return { ...item, mainImageUrl: TEMP_DEFAULT_PRODUCT_IMAGE_URL };
+  private withDefaultImage<T extends {
+    mainImageUrl?: string | null;
+    imageUrls?: string[];
+  }>(item: T): T & { imageUrls: string[] } {
+    const urls =
+      item.imageUrls && item.imageUrls.length > 0
+        ? item.imageUrls
+        : item.mainImageUrl
+          ? [item.mainImageUrl]
+          : [TEMP_DEFAULT_PRODUCT_IMAGE_URL];
+
+    return {
+      ...item,
+      mainImageUrl: item.mainImageUrl || urls[0],
+      imageUrls: urls,
+    };
   }
 
   async getCategories() {

@@ -95,4 +95,25 @@ export class CloudinaryService {
       autoCropUrl,
     };
   }
+
+  async uploadDataUri(dataUri: string, folder = 'secretgarden/products') {
+    const cloudinary = this.configure();
+    const uploadResult = await cloudinary.uploader.upload(dataUri, {
+      folder,
+      resource_type: 'image',
+    });
+
+    const url =
+      (uploadResult.secure_url as string | undefined) ||
+      (uploadResult.url as string | undefined);
+
+    if (!url) {
+      throw new InternalServerErrorException('Cloudinary upload failed');
+    }
+
+    return {
+      url,
+      publicId: uploadResult.public_id as string | undefined,
+    };
+  }
 }

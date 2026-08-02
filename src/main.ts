@@ -1,7 +1,9 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { json, urlencoded } from 'express';
 import { PrismaClientExceptionFilter } from 'nestjs-prisma';
 import { AppModule } from './app.module';
 import type {
@@ -11,7 +13,12 @@ import type {
 } from './common/configs/config.interface';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // raw data URI фото > дефолтних 100kb → піднімаємо ліміт
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
+  app.use(json({ limit: '15mb' }));
+  app.use(urlencoded({ extended: true, limit: '15mb' }));
 
   app.setGlobalPrefix('api');
 

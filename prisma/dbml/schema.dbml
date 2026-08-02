@@ -113,12 +113,14 @@ Table Product {
   name String [not null]
   slug String [unique, not null]
   price Decimal [not null]
+  salePrice Decimal [note: 'Ціна зі знижкою (якщо null — знижки немає)']
   currency String [not null, default: 'UAH']
   shortDescription String
   description String
   inStock Boolean [not null, default: true]
   stockQuantity Int
   mainImageUrl String
+  imageUrls String[] [not null, note: 'Галерея фото товару (перше = головне, якщо mainImageUrl порожній)']
   label String
   categories ProductCategory [not null]
   orderItems OrderItem [not null]
@@ -222,6 +224,68 @@ Table Review {
   title String
   text String
   authorName String
+}
+
+Table Banner {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  order Int [not null, default: 0]
+  title String [not null, default: '']
+  titleSub String
+  description String [not null, default: '']
+  imageUrl String [not null]
+  mobileImageUrl String
+  isActive Boolean [not null, default: true]
+}
+
+Table AboutBlock {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  order Int [not null, default: 0]
+  title String [not null]
+  body String [not null, default: '', note: 'Абзаци тексту, розділені \n\n']
+  imageUrl String
+  imageLeft Boolean [not null, default: true]
+  ctaLabel String
+  ctaUrl String
+  links Json [note: 'JSON: [{ "label": "Instagram", "url": "https://...", "kind": "instagram" }]']
+}
+
+Table ContactSettings {
+  id String [pk, default: 'default']
+  updatedAt DateTime [not null]
+  introTitle String [not null, default: 'Ми завжди на зв'язку']
+  introText String [not null, default: '']
+  scheduleTitle String [not null, default: 'Графік роботи']
+  hoursTime String [not null, default: '12:00 - 21:00']
+  daysOff String [not null, default: 'Без вихідних']
+  holidayNote String
+  address String [not null, default: '']
+  email String [not null, default: '']
+  instagramUrl String [not null, default: '']
+  instagramLabel String
+  telegramUrls Json [not null, default: '[]', note: 'JSON string[] URLs']
+  telegramLabels Json [note: 'JSON string[] labels']
+  mapLat Float [not null, default: 48.4647, note: 'Широта / довгота для Google Maps embed']
+  mapLng Float [not null, default: 35.0462]
+  mapZoom Int [not null, default: 17]
+  mapEmbedUrl String [note: 'Якщо задано — використовується напряму як src iframe']
+  venuePhotoUrl String
+  certificateUrl String
+  donationUrl String
+}
+
+Table VenuePhoto {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  order Int [not null, default: 0]
+  imageUrl String [not null]
+  title String
+  alt String
+  isActive Boolean [not null, default: true]
 }
 
 Enum Role {

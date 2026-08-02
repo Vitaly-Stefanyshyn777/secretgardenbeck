@@ -17,6 +17,8 @@ import { ViewedModule } from './viewed/viewed.module';
 import { CartModule } from './cart/cart.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { OrdersModule } from './orders/orders.module';
+import { AdminModule } from './admin/admin.module';
+import { ContentModule } from './content/content.module';
 
 @Module({
   imports: [
@@ -48,6 +50,8 @@ import { OrdersModule } from './orders/orders.module';
     CartModule,
     WishlistModule,
     OrdersModule,
+    AdminModule,
+    ContentModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppResolver],

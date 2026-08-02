@@ -111,12 +111,16 @@ model Product {
   name           String
   slug           String            @unique
   price          Decimal
+  /// Ціна зі знижкою (якщо null — знижки немає)
+  salePrice      Decimal?
   currency       String            @default("UAH")
   shortDescription String?
   description    String?
   inStock        Boolean           @default(true)
   stockQuantity  Int?              // null = не ведемо складський облік
   mainImageUrl   String?
+  /// Галерея фото товару (перше = головне, якщо mainImageUrl порожній)
+  imageUrls      String[]          @default([])
   // для вітрини типу "CBD масло", "CBD WAX" і т.п.
   label          String?           // виводимо як заголовок картки, якщо треба відрізняти від name
 
@@ -229,4 +233,72 @@ model Review {
 enum Role {
   ADMIN
   USER
+}
+
+model Banner {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  order          Int      @default(0)
+  title          String   @default("")
+  titleSub       String?
+  description    String   @default("")
+  imageUrl       String
+  mobileImageUrl String?
+  isActive       Boolean  @default(true)
+}
+
+model AboutBlock {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Int      @default(0)
+  title     String
+  /// Абзаци тексту, розділені \n\n
+  body      String   @default("")
+  imageUrl  String?
+  imageLeft Boolean  @default(true)
+  ctaLabel  String?
+  ctaUrl    String?
+  /// JSON: [{ "label": "Instagram", "url": "https://...", "kind": "instagram" }]
+  links     Json?
+}
+
+model ContactSettings {
+  id             String   @id @default("default")
+  updatedAt      DateTime @updatedAt
+  introTitle     String   @default("Ми завжди на зв'язку")
+  introText      String   @default("")
+  scheduleTitle  String   @default("Графік роботи")
+  hoursTime      String   @default("12:00 - 21:00")
+  daysOff        String   @default("Без вихідних")
+  holidayNote    String?
+  address        String   @default("")
+  email          String   @default("")
+  instagramUrl   String   @default("")
+  instagramLabel String?
+  /// JSON string[] URLs
+  telegramUrls   Json     @default("[]")
+  /// JSON string[] labels
+  telegramLabels Json?
+  /// Широта / довгота для Google Maps embed
+  mapLat         Float    @default(48.4647)
+  mapLng         Float    @default(35.0462)
+  mapZoom        Int      @default(17)
+  /// Якщо задано — використовується напряму як src iframe
+  mapEmbedUrl    String?
+  venuePhotoUrl  String?
+  certificateUrl String?
+  donationUrl    String?
+}
+
+model VenuePhoto {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Int      @default(0)
+  imageUrl  String
+  title     String?
+  alt       String?
+  isActive  Boolean  @default(true)
 }
