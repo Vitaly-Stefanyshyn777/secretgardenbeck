@@ -29,6 +29,18 @@ security: {
 
 Не використовуй значення з `.env.example` у продакшні.
 
+### WayForPay на Render (Environment)
+
+```env
+WAYFORPAY_MERCHANT_ACCOUNT=test_merch_n1
+WAYFORPAY_SECRET_KEY=flk3409refn54t54t*FNJRET
+WAYFORPAY_DOMAIN=secretgardenfront.vercel.app
+WAYFORPAY_RETURN_URL=https://<front>/order-success
+WAYFORPAY_SERVICE_URL=https://secretgardenbeck.onrender.com/api/wayforpay/callback
+```
+
+Для бою підстав свій `WAYFORPAY_MERCHANT_ACCOUNT` і `WAYFORPAY_SECRET_KEY` з кабінету WayForPay.
+
 ---
 
 ## 3. Refresh flow на фронті

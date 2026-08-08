@@ -204,6 +204,9 @@ model Order {
   termsAccepted   Boolean  @default(false)
   discountAmount  Decimal  @default(0)
   deliveryCost    Decimal  @default(0)
+  // Оплата
+  paymentMethod   String?  // wayforpay, cod, bacs, ...
+  paymentStatus   String?  // PENDING, PAID, FAILED
 }
 
 model OrderItem {

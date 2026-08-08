@@ -19,6 +19,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { OrdersModule } from './orders/orders.module';
 import { AdminModule } from './admin/admin.module';
 import { ContentModule } from './content/content.module';
+import { WayforpayModule } from './wayforpay/wayforpay.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ContentModule } from './content/content.module';
     OrdersModule,
     AdminModule,
     ContentModule,
+    WayforpayModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppResolver],

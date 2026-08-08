@@ -200,6 +200,8 @@ Table Order {
   termsAccepted Boolean [not null, default: false]
   discountAmount Decimal [not null, default: 0]
   deliveryCost Decimal [not null, default: 0]
+  paymentMethod String
+  paymentStatus String
 }
 
 Table OrderItem {

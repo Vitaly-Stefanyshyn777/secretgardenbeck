@@ -81,6 +81,11 @@ export class CreateOrderDto {
   @Min(0)
   deliveryCost?: number;
 
+  /** wayforpay | cod | bacs | ... */
+  @IsOptional()
+  @IsString()
+  paymentMethod?: string;
+
   /** Якщо не передано — беруться з кошика користувача */
   @IsOptional()
   @IsArray()

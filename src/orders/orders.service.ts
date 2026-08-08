@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { MailService } from '../mail/mail.service';
 
 // Тимчасове рішення: дефолтне фото для карток, поки не налаштовані
 // завантаження/прив’язка зображень для кожного товару окремо.
@@ -16,7 +17,10 @@ const TEMP_DEFAULT_PRODUCT_IMAGE_URL =
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService,
+  ) {}
 
   private withDefaultImage<T extends { mainImageUrl?: string | null }>(item: T): T {
     if (item.mainImageUrl) return item;
@@ -99,6 +103,8 @@ export class OrdersService {
           termsAccepted: dto.termsAccepted,
           discountAmount: discount,
           deliveryCost: delivery,
+          paymentMethod: dto.paymentMethod,
+          paymentStatus: dto.paymentMethod === 'wayforpay' ? 'PENDING' : null,
           items: {
             create: orderItems.map((i) => ({
               productId: i.productId,
@@ -126,6 +132,32 @@ export class OrdersService {
       return ord;
     });
 
+    void this.mail
+      .sendOrderCreated({
+        id: order.id,
+        createdAt: order.createdAt,
+        firstName: order.firstName,
+        lastName: order.lastName,
+        phone: order.phone,
+        email: order.email,
+        total: Number(order.total),
+        deliveryMethod: order.deliveryMethod,
+        deliveryCity: order.deliveryCity,
+        deliveryAddress: order.deliveryAddress,
+        comment: order.comment,
+        items: (order.items ?? []).map((i) => ({
+          name: i.product?.name || i.productId,
+          quantity: i.quantity,
+          price: Number(i.price),
+        })),
+      })
+      .catch((err) =>
+        this.logger.error(
+          'Order notify email failed',
+          err instanceof Error ? err.stack : String(err),
+        ),
+      );
+
     return this.formatOrderResponse(order, subtotal);
   }
 
@@ -142,10 +174,15 @@ export class OrdersService {
       order.deliveryCity || order.deliveryAddress
         ? [order.deliveryCity, order.deliveryAddress].filter(Boolean).join(', ')
         : 'Відділення не вказано';
+    const paymentLabels: Record<string, string> = {
+      wayforpay: 'Онлайн-оплата WayForPay',
+      cod: 'Накладений платіж',
+      bacs: 'Оплата на рахунок',
+    };
     const paymentLabel =
-      order.deliveryMethod === 'nova_poshta'
-        ? 'За тарифами "Нової Пошти"'
-        : order.deliveryMethod ?? 'Не вказано';
+      (order.paymentMethod && paymentLabels[order.paymentMethod]) ||
+      order.paymentMethod ||
+      'Не вказано';
     const phoneLabel = order.phone || order.recipientPhone || 'Телефон не вказано';
 
     return {
