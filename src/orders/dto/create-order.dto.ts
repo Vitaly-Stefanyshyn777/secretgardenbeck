@@ -86,6 +86,10 @@ export class CreateOrderDto {
   @IsString()
   paymentMethod?: string;
 
+  @IsOptional()
+  @IsString()
+  promoCode?: string;
+
   /** Якщо не передано — беруться з кошика користувача */
   @IsOptional()
   @IsArray()

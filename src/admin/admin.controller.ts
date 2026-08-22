@@ -21,9 +21,11 @@ import { AdminService } from './admin.service';
 import {
   CreateAdminCategoryDto,
   CreateAdminProductDto,
+  CreateAdminPromoCodeDto,
   UpdateAdminCategoryDto,
   UpdateAdminOrderStatusDto,
   UpdateAdminProductDto,
+  UpdateAdminPromoCodeDto,
   UpdateAdminUserRoleDto,
   UpdateContactSettingsDto,
   UploadImageDto,
@@ -31,11 +33,15 @@ import {
   UpsertBannerDto,
   UpsertVenuePhotoDto,
 } from './dto/admin.dto';
+import { PromoCodesService } from '../promo-codes/promo-codes.service';
 
 @ApiTags('admin')
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly promoCodes: PromoCodesService,
+  ) {}
 
   @Post('auth/login')
   @HttpCode(HttpStatus.OK)
@@ -316,5 +322,40 @@ export class AdminController {
   @Roles(Role.ADMIN)
   deleteVenuePhoto(@Param('id') id: string) {
     return this.adminService.deleteVenuePhoto(id);
+  }
+
+  @Get('promo-codes')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  listPromoCodes() {
+    return this.promoCodes.list();
+  }
+
+  @Post('promo-codes')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  createPromoCode(@Body() dto: CreateAdminPromoCodeDto) {
+    return this.promoCodes.create(dto);
+  }
+
+  @Patch('promo-codes/:id')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  updatePromoCode(
+    @Param('id') id: string,
+    @Body() dto: UpdateAdminPromoCodeDto,
+  ) {
+    return this.promoCodes.update(id, dto);
+  }
+
+  @Delete('promo-codes/:id')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  deletePromoCode(@Param('id') id: string) {
+    return this.promoCodes.remove(id);
   }
 }

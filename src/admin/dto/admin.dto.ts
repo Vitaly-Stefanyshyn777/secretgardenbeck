@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -44,6 +45,14 @@ export class CreateAdminProductDto {
   @IsString()
   name: string;
 
+  @IsOptional()
+  @IsString()
+  nameEn?: string | null;
+
+  @IsOptional()
+  @IsString()
+  nameUk?: string | null;
+
   @IsString()
   slug: string;
 
@@ -66,7 +75,23 @@ export class CreateAdminProductDto {
 
   @IsOptional()
   @IsString()
+  shortDescriptionEn?: string | null;
+
+  @IsOptional()
+  @IsString()
+  shortDescriptionUk?: string | null;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  descriptionEn?: string | null;
+
+  @IsOptional()
+  @IsString()
+  descriptionUk?: string | null;
 
   @IsOptional()
   @IsBoolean()
@@ -89,6 +114,14 @@ export class CreateAdminProductDto {
   @IsString()
   label?: string;
 
+  @IsOptional()
+  @IsString()
+  labelEn?: string | null;
+
+  @IsOptional()
+  @IsString()
+  labelUk?: string | null;
+
   /** Батьківська категорія (напр. «Гриби») */
   @IsOptional()
   @IsString()
@@ -110,12 +143,26 @@ export class CreateAdminProductDto {
   @ValidateNested({ each: true })
   @Type(() => AdminDescriptionBlockDto)
   descriptionBlocks?: AdminDescriptionBlockDto[];
+
+  /** Значення фільтрів категорії (тип, виробник, матеріал…) */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  filterValueIds?: string[];
 }
 
 export class UpdateAdminProductDto {
   @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  nameEn?: string | null;
+
+  @IsOptional()
+  @IsString()
+  nameUk?: string | null;
 
   @IsOptional()
   @IsString()
@@ -141,7 +188,23 @@ export class UpdateAdminProductDto {
 
   @IsOptional()
   @IsString()
+  shortDescriptionEn?: string | null;
+
+  @IsOptional()
+  @IsString()
+  shortDescriptionUk?: string | null;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  descriptionEn?: string | null;
+
+  @IsOptional()
+  @IsString()
+  descriptionUk?: string | null;
 
   @IsOptional()
   @IsBoolean()
@@ -166,6 +229,14 @@ export class UpdateAdminProductDto {
 
   @IsOptional()
   @IsString()
+  labelEn?: string | null;
+
+  @IsOptional()
+  @IsString()
+  labelUk?: string | null;
+
+  @IsOptional()
+  @IsString()
   categoryId?: string | null;
 
   @IsOptional()
@@ -183,6 +254,11 @@ export class UpdateAdminProductDto {
   @ValidateNested({ each: true })
   @Type(() => AdminDescriptionBlockDto)
   descriptionBlocks?: AdminDescriptionBlockDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  filterValueIds?: string[];
 }
 
 export class UploadImageDto {
@@ -193,6 +269,14 @@ export class UploadImageDto {
 export class CreateAdminCategoryDto {
   @IsString()
   name: string;
+
+  @IsOptional()
+  @IsString()
+  nameEn?: string | null;
+
+  @IsOptional()
+  @IsString()
+  nameUk?: string | null;
 
   @IsString()
   slug: string;
@@ -206,6 +290,14 @@ export class UpdateAdminCategoryDto {
   @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  nameEn?: string | null;
+
+  @IsOptional()
+  @IsString()
+  nameUk?: string | null;
 
   @IsOptional()
   @IsString()
@@ -387,4 +479,52 @@ export class UpsertVenuePhotoDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+}
+
+export class CreateAdminPromoCodeDto {
+  @IsString()
+  code: string;
+
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  discountPercent: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  expiresAt?: string | null;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  usageLimit?: number | null;
+}
+
+export class UpdateAdminPromoCodeDto {
+  @IsOptional()
+  @IsString()
+  code?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  discountPercent?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  expiresAt?: string | null;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  usageLimit?: number | null;
 }

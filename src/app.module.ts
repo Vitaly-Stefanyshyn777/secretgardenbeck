@@ -20,6 +20,7 @@ import { OrdersModule } from './orders/orders.module';
 import { AdminModule } from './admin/admin.module';
 import { ContentModule } from './content/content.module';
 import { WayforpayModule } from './wayforpay/wayforpay.module';
+import { PromoCodesModule } from './promo-codes/promo-codes.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { WayforpayModule } from './wayforpay/wayforpay.module';
     AdminModule,
     ContentModule,
     WayforpayModule,
+    PromoCodesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppResolver],

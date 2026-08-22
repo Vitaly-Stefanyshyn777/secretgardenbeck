@@ -74,6 +74,8 @@ model Category {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   name      String
+  nameEn    String?
+  nameUk    String?
   slug      String      @unique
   parentId  String?
   parent    Category?   @relation("CategoryToSubcategories", fields: [parentId], references: [id])
@@ -109,13 +111,19 @@ model Product {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   name           String
+  nameEn         String?
+  nameUk         String?
   slug           String            @unique
   price          Decimal
   /// Ціна зі знижкою (якщо null — знижки немає)
   salePrice      Decimal?
   currency       String            @default("UAH")
   shortDescription String?
+  shortDescriptionEn String?
+  shortDescriptionUk String?
   description    String?
+  descriptionEn  String?
+  descriptionUk  String?
   inStock        Boolean           @default(true)
   stockQuantity  Int?              // null = не ведемо складський облік
   mainImageUrl   String?
@@ -123,6 +131,8 @@ model Product {
   imageUrls      String[]          @default([])
   // для вітрини типу "CBD масло", "CBD WAX" і т.п.
   label          String?           // виводимо як заголовок картки, якщо треба відрізняти від name
+  labelEn        String?
+  labelUk        String?
 
   // зв’язки
   categories         ProductCategory[]
@@ -207,6 +217,19 @@ model Order {
   // Оплата
   paymentMethod   String?  // wayforpay, cod, bacs, ...
   paymentStatus   String?  // PENDING, PAID, FAILED
+  promoCode       String?
+}
+
+model PromoCode {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  code            String    @unique
+  discountPercent Int
+  isActive        Boolean   @default(true)
+  expiresAt       DateTime?
+  usageLimit      Int?
+  usageCount      Int       @default(0)
 }
 
 model OrderItem {

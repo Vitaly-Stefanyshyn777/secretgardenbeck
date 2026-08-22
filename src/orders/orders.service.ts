@@ -7,6 +7,7 @@ import {
 import { PrismaService } from 'nestjs-prisma';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { MailService } from '../mail/mail.service';
+import { PromoCodesService } from '../promo-codes/promo-codes.service';
 
 // Тимчасове рішення: дефолтне фото для карток, поки не налаштовані
 // завантаження/прив’язка зображень для кожного товару окремо.
@@ -20,6 +21,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
+    private readonly promoCodes: PromoCodesService,
   ) {}
 
   private withDefaultImage<T extends { mainImageUrl?: string | null }>(item: T): T {
@@ -79,7 +81,20 @@ export class OrdersService {
       (sum, i) => sum + i.price * i.quantity,
       0,
     );
-    const discount = dto.discountAmount ?? 0;
+    const saleDiscount = dto.discountAmount ?? 0;
+    let promoDiscount = 0;
+    let promoId: string | null = null;
+    let promoCodeValue: string | null = null;
+
+    if (dto.promoCode?.trim()) {
+      const promo = await this.promoCodes.assertValid(dto.promoCode);
+      const base = Math.max(0, subtotal - saleDiscount);
+      promoDiscount = Math.round((base * promo.discountPercent) / 100);
+      promoId = promo.id;
+      promoCodeValue = promo.code;
+    }
+
+    const discount = saleDiscount + promoDiscount;
     const delivery = dto.deliveryCost ?? 0;
     const total = Math.max(0, subtotal - discount + delivery);
 
@@ -105,6 +120,7 @@ export class OrdersService {
           deliveryCost: delivery,
           paymentMethod: dto.paymentMethod,
           paymentStatus: dto.paymentMethod === 'wayforpay' ? 'PENDING' : null,
+          promoCode: promoCodeValue,
           items: {
             create: orderItems.map((i) => ({
               productId: i.productId,
@@ -128,6 +144,12 @@ export class OrdersService {
           },
         },
       });
+      if (promoId) {
+        await tx.promoCode.update({
+          where: { id: promoId },
+          data: { usageCount: { increment: 1 } },
+        });
+      }
       await tx.cartItem.deleteMany({ where: { userId } });
       return ord;
     });

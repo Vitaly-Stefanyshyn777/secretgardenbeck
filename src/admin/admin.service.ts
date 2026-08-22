@@ -20,6 +20,10 @@ import {
   UpsertBannerDto,
   UpsertVenuePhotoDto,
 } from './dto/admin.dto';
+import {
+  resolveCategoryI18nInput,
+  resolveProductI18nInput,
+} from '../common/i18n/localized-fields';
 
 /** Той самий fallback, що в CatalogService / CartService */
 const TEMP_DEFAULT_PRODUCT_IMAGE_URL =
@@ -167,12 +171,18 @@ export class AdminService {
         },
         characteristics: { orderBy: { order: 'asc' } },
         descriptionBlocks: { orderBy: { order: 'asc' } },
+        filterValues: {
+          include: {
+            filterValue: { include: { filter: true } },
+          },
+        },
       },
     });
     if (!product) throw new NotFoundException('Product not found');
     return {
       ...this.withDefaultImage(product),
       ...this.mapProductCategories(product),
+      filterValueIds: product.filterValues.map((fv) => fv.filterValueId),
     };
   }
 
@@ -182,10 +192,13 @@ export class AdminService {
       dto.categoryId,
       dto.subcategoryId,
     );
+    const i18n = resolveProductI18nInput(dto);
 
     return this.prisma.product.create({
       data: {
-        name: dto.name,
+        name: i18n.name,
+        nameEn: i18n.nameEn,
+        nameUk: i18n.nameUk,
         slug: dto.slug,
         price: new Prisma.Decimal(dto.price),
         salePrice:
@@ -193,13 +206,19 @@ export class AdminService {
             ? null
             : new Prisma.Decimal(dto.salePrice),
         currency: dto.currency ?? 'UAH',
-        shortDescription: dto.shortDescription,
-        description: dto.description,
+        shortDescription: i18n.shortDescription,
+        shortDescriptionEn: i18n.shortDescriptionEn,
+        shortDescriptionUk: i18n.shortDescriptionUk,
+        description: i18n.description,
+        descriptionEn: i18n.descriptionEn,
+        descriptionUk: i18n.descriptionUk,
         inStock: dto.inStock ?? true,
         stockQuantity: dto.stockQuantity ?? null,
         mainImageUrl: images.mainImageUrl,
         imageUrls: images.imageUrls,
-        label: dto.label,
+        label: i18n.label,
+        labelEn: i18n.labelEn,
+        labelUk: i18n.labelUk,
         categories: categoryIds.length
           ? {
               create: categoryIds.map((categoryId) => ({ categoryId })),
@@ -224,6 +243,13 @@ export class AdminService {
               })),
             }
           : undefined,
+        filterValues: dto.filterValueIds?.length
+          ? {
+              create: dto.filterValueIds.map((filterValueId) => ({
+                filterValueId,
+              })),
+            }
+          : undefined,
       },
       include: {
         categories: {
@@ -242,7 +268,15 @@ export class AdminService {
     await this.getProduct(id);
 
     const data: Prisma.ProductUpdateInput = {
-      ...(dto.name !== undefined ? { name: dto.name } : {}),
+      ...(dto.name !== undefined
+        ? {
+            name: dto.name,
+            nameUk: dto.nameUk ?? dto.name,
+          }
+        : dto.nameUk !== undefined
+          ? { nameUk: dto.nameUk }
+          : {}),
+      ...(dto.nameEn !== undefined ? { nameEn: dto.nameEn } : {}),
       ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
       ...(dto.price !== undefined
         ? { price: new Prisma.Decimal(dto.price) }
@@ -257,16 +291,41 @@ export class AdminService {
         : {}),
       ...(dto.currency !== undefined ? { currency: dto.currency } : {}),
       ...(dto.shortDescription !== undefined
-        ? { shortDescription: dto.shortDescription }
+        ? {
+            shortDescription: dto.shortDescription,
+            shortDescriptionUk:
+              dto.shortDescriptionUk ?? dto.shortDescription,
+          }
+        : dto.shortDescriptionUk !== undefined
+          ? { shortDescriptionUk: dto.shortDescriptionUk }
+          : {}),
+      ...(dto.shortDescriptionEn !== undefined
+        ? { shortDescriptionEn: dto.shortDescriptionEn }
         : {}),
       ...(dto.description !== undefined
-        ? { description: dto.description }
+        ? {
+            description: dto.description,
+            descriptionUk: dto.descriptionUk ?? dto.description,
+          }
+        : dto.descriptionUk !== undefined
+          ? { descriptionUk: dto.descriptionUk }
+          : {}),
+      ...(dto.descriptionEn !== undefined
+        ? { descriptionEn: dto.descriptionEn }
         : {}),
       ...(dto.inStock !== undefined ? { inStock: dto.inStock } : {}),
       ...(dto.stockQuantity !== undefined
         ? { stockQuantity: dto.stockQuantity }
         : {}),
-      ...(dto.label !== undefined ? { label: dto.label } : {}),
+      ...(dto.label !== undefined
+        ? {
+            label: dto.label,
+            labelUk: dto.labelUk ?? dto.label,
+          }
+        : dto.labelUk !== undefined
+          ? { labelUk: dto.labelUk }
+          : {}),
+      ...(dto.labelEn !== undefined ? { labelEn: dto.labelEn } : {}),
     };
 
     if (dto.imageUrls !== undefined || dto.mainImageUrl !== undefined) {
@@ -326,6 +385,18 @@ export class AdminService {
         }
       }
 
+      if (dto.filterValueIds !== undefined) {
+        await tx.productFilterValue.deleteMany({ where: { productId: id } });
+        if (dto.filterValueIds.length > 0) {
+          await tx.productFilterValue.createMany({
+            data: dto.filterValueIds.map((filterValueId) => ({
+              productId: id,
+              filterValueId,
+            })),
+          });
+        }
+      }
+
       const updated = await tx.product.update({
         where: { id },
         data,
@@ -352,12 +423,25 @@ export class AdminService {
   }
 
   listCategories() {
+    const filterInclude = {
+      orderBy: { order: 'asc' as const },
+      include: {
+        values: { orderBy: { order: 'asc' as const } },
+      },
+    };
     return this.prisma.category.findMany({
       orderBy: { name: 'asc' },
       include: {
         _count: { select: { products: true } },
         parent: true,
-        children: { orderBy: { name: 'asc' } },
+        filters: filterInclude,
+        children: {
+          orderBy: { name: 'asc' },
+          include: {
+            _count: { select: { products: true } },
+            filters: filterInclude,
+          },
+        },
       },
     });
   }
@@ -379,9 +463,12 @@ export class AdminService {
   }
 
   createCategory(dto: CreateAdminCategoryDto) {
+    const i18n = resolveCategoryI18nInput(dto);
     return this.prisma.category.create({
       data: {
-        name: dto.name,
+        name: i18n.name,
+        nameEn: i18n.nameEn,
+        nameUk: i18n.nameUk,
         slug: dto.slug,
         parentId: dto.parentId ?? null,
       },
@@ -393,7 +480,15 @@ export class AdminService {
     return this.prisma.category.update({
       where: { id },
       data: {
-        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.name !== undefined
+          ? {
+              name: dto.name,
+              nameUk: dto.nameUk ?? dto.name,
+            }
+          : dto.nameUk !== undefined
+            ? { nameUk: dto.nameUk }
+            : {}),
+        ...(dto.nameEn !== undefined ? { nameEn: dto.nameEn } : {}),
         ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
         ...(dto.parentId !== undefined ? { parentId: dto.parentId } : {}),
       },
@@ -401,8 +496,40 @@ export class AdminService {
   }
 
   async deleteCategory(id: string) {
-    await this.getCategory(id);
-    await this.prisma.category.delete({ where: { id } });
+    const category = await this.prisma.category.findUnique({
+      where: { id },
+      include: {
+        children: { select: { id: true } },
+        filters: { select: { id: true, values: { select: { id: true } } } },
+      },
+    });
+    if (!category) throw new NotFoundException('Category not found');
+
+    for (const child of category.children) {
+      await this.deleteCategory(child.id);
+    }
+
+    const filterIds = category.filters.map((f) => f.id);
+    const valueIds = category.filters.flatMap((f) => f.values.map((v) => v.id));
+
+    await this.prisma.$transaction(async (tx) => {
+      if (valueIds.length > 0) {
+        await tx.productFilterValue.deleteMany({
+          where: { filterValueId: { in: valueIds } },
+        });
+        await tx.categoryFilterValue.deleteMany({
+          where: { id: { in: valueIds } },
+        });
+      }
+      if (filterIds.length > 0) {
+        await tx.categoryFilter.deleteMany({
+          where: { id: { in: filterIds } },
+        });
+      }
+      await tx.productCategory.deleteMany({ where: { categoryId: id } });
+      await tx.category.delete({ where: { id } });
+    });
+
     return { ok: true };
   }
 
