@@ -22,6 +22,7 @@ model User {
   telegram  String?
   firstname String?
   lastname  String?
+  middlename String?
   role      Role
   posts     Post[]
   orders    Order[]
@@ -29,6 +30,17 @@ model User {
   viewedProducts UserViewedProduct[]
   cartItems     CartItem[]
   wishlist      UserWishlist[]
+  promoUsages   PromoCodeUsage[]
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
 }
 
 model CartItem {
@@ -198,6 +210,7 @@ model Order {
   // Особисті дані (обов'язкові для нових замовлень)
   firstName  String?
   lastName   String?
+  middleName String?
   phone      String?
   email      String?
   // Отримувати буде інша людина
@@ -230,6 +243,21 @@ model PromoCode {
   expiresAt       DateTime?
   usageLimit      Int?
   usageCount      Int       @default(0)
+  usages          PromoCodeUsage[]
+}
+
+/// Один промокод — один раз на користувача (код можна шарити між акаунтами)
+model PromoCodeUsage {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  promoCodeId String
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId     String?
+
+  @@unique([promoCodeId, userId])
+  @@index([userId])
 }
 
 model OrderItem {
@@ -267,8 +295,11 @@ model Banner {
   updatedAt      DateTime @updatedAt
   order          Int      @default(0)
   title          String   @default("")
+  titleEn        String?
   titleSub       String?
+  titleSubEn     String?
   description    String   @default("")
+  descriptionEn  String?
   imageUrl       String
   mobileImageUrl String?
   isActive       Boolean  @default(true)
@@ -290,6 +321,19 @@ model AboutBlock {
   links     Json?
 }
 
+model FaqItem {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Int      @default(0)
+  title     String
+  /// Абзаци через \n\n
+  body      String   @default("")
+  isActive  Boolean  @default(true)
+  /// Розбити текст на колонки (як у дизайні для довгих карток)
+  isSplit   Boolean  @default(false)
+}
+
 model ContactSettings {
   id             String   @id @default("default")
   updatedAt      DateTime @updatedAt
@@ -308,8 +352,8 @@ model ContactSettings {
   /// JSON string[] labels
   telegramLabels Json?
   /// Широта / довгота для Google Maps embed
-  mapLat         Float    @default(48.4647)
-  mapLng         Float    @default(35.0462)
+  mapLat         Float    @default(48.463662)
+  mapLng         Float    @default(35.046347)
   mapZoom        Int      @default(17)
   /// Якщо задано — використовується напряму як src iframe
   mapEmbedUrl    String?

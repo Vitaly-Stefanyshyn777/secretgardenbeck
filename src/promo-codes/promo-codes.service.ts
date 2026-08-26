@@ -100,7 +100,7 @@ export class PromoCodesService {
     return { ok: true };
   }
 
-  async assertValid(rawCode: string) {
+  async assertValid(rawCode: string, userId?: string | null) {
     const code = this.normalizeCode(rawCode);
     if (!code) throw new BadRequestException('Вкажи промокод');
 
@@ -111,20 +111,61 @@ export class PromoCodesService {
     if (promo.expiresAt && promo.expiresAt.getTime() < Date.now()) {
       throw new BadRequestException('Термін дії промокоду закінчився');
     }
-    if (
-      promo.usageLimit != null &&
-      promo.usageCount >= promo.usageLimit
-    ) {
-      throw new BadRequestException('Промокод уже використано');
+    if (promo.usageLimit != null && promo.usageCount >= promo.usageLimit) {
+      throw new BadRequestException('Ліміт використання промокоду вичерпано');
     }
+
+    if (userId) {
+      const alreadyUsed = await this.prisma.promoCodeUsage.findUnique({
+        where: {
+          promoCodeId_userId: { promoCodeId: promo.id, userId },
+        },
+      });
+      if (alreadyUsed) {
+        throw new BadRequestException(
+          'Ви вже використали цей промокод на своєму акаунті',
+        );
+      }
+
+      // Fallback для старих замовлень без PromoCodeUsage
+      const usedInOrder = await this.prisma.order.findFirst({
+        where: { userId, promoCode: promo.code },
+        select: { id: true },
+      });
+      if (usedInOrder) {
+        throw new BadRequestException(
+          'Ви вже використали цей промокод на своєму акаунті',
+        );
+      }
+    }
+
     return promo;
   }
 
-  async validate(rawCode: string) {
-    const promo = await this.assertValid(rawCode);
+  async validate(rawCode: string, userId?: string | null) {
+    const promo = await this.assertValid(rawCode, userId);
     return {
       code: promo.code,
       discountPercent: promo.discountPercent,
     };
+  }
+
+  async recordUsage(
+    tx: Prisma.TransactionClient,
+    promoCodeId: string,
+    userId: string,
+    orderId?: string,
+  ) {
+    await tx.promoCodeUsage.create({
+      data: {
+        promoCodeId,
+        userId,
+        orderId: orderId ?? null,
+      },
+    });
+    await tx.promoCode.update({
+      where: { id: promoCodeId },
+      data: { usageCount: { increment: 1 } },
+    });
   }
 }

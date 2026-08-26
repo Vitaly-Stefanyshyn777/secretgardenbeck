@@ -31,6 +31,9 @@ export class User extends BaseModel {
   @Field(() => String, { nullable: true })
   lastname?: string;
 
+  @Field(() => String, { nullable: true })
+  middlename?: string;
+
   @Field(() => Role)
   role: Role;
 

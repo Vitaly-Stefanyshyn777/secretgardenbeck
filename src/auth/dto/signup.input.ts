@@ -22,4 +22,7 @@ export class SignupInput {
 
   @Field({ nullable: true })
   lastname?: string;
+
+  @Field({ nullable: true })
+  middlename?: string;
 }

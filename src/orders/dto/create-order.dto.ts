@@ -26,6 +26,10 @@ export class CreateOrderDto {
   @IsString()
   lastName: string;
 
+  @IsOptional()
+  @IsString()
+  middleName?: string;
+
   @IsString()
   phone: string;
 

@@ -116,4 +116,50 @@ export class CloudinaryService {
       publicId: uploadResult.public_id as string | undefined,
     };
   }
+
+  /**
+   * PDF / raw files via data URI (data:application/pdf;base64,...)
+   * Uses Cloudinary resource_type=raw so the file is downloadable as-is.
+   */
+  async uploadRawDataUri(
+    dataUri: string,
+    folder = 'secretgarden/certificates',
+  ) {
+    if (!dataUri.startsWith('data:')) {
+      throw new InternalServerErrorException('Expected a data URI');
+    }
+
+    const mimeMatch = /^data:([^;,]+)/i.exec(dataUri);
+    const mime = (mimeMatch?.[1] || '').toLowerCase();
+    const allowed = [
+      'application/pdf',
+      'application/x-pdf',
+      'application/octet-stream',
+    ];
+    if (mime && !allowed.includes(mime) && !mime.includes('pdf')) {
+      throw new InternalServerErrorException(
+        'Only PDF files are allowed for this upload',
+      );
+    }
+
+    const cloudinary = this.configure();
+    const uploadResult = await cloudinary.uploader.upload(dataUri, {
+      folder,
+      resource_type: 'raw',
+      format: 'pdf',
+    });
+
+    const url =
+      (uploadResult.secure_url as string | undefined) ||
+      (uploadResult.url as string | undefined);
+
+    if (!url) {
+      throw new InternalServerErrorException('Cloudinary PDF upload failed');
+    }
+
+    return {
+      url,
+      publicId: uploadResult.public_id as string | undefined,
+    };
+  }
 }

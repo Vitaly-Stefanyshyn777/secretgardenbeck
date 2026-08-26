@@ -2,6 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
+import {
+  AppLocale,
+  localizeCategoryRecord,
+  localizeProductRecord,
+} from '../common/i18n/localized-fields';
 
 // Тимчасове рішення: дефолтне фото для карток, поки не налаштовані
 // завантаження/прив’язка зображень для кожного товару окремо.
@@ -30,8 +35,8 @@ export class CatalogService {
     };
   }
 
-  async getCategories() {
-    return this.prisma.category.findMany({
+  async getCategories(locale: AppLocale = 'uk') {
+    const rows = await this.prisma.category.findMany({
       where: { parentId: null },
       include: {
         children: {
@@ -53,9 +58,15 @@ export class CatalogService {
       },
       orderBy: { name: 'asc' },
     });
+    return rows.map((c) =>
+      localizeCategoryRecord(
+        c as Parameters<typeof localizeCategoryRecord>[0],
+        locale,
+      ),
+    );
   }
 
-  async getProducts(query: ProductQueryDto) {
+  async getProducts(query: ProductQueryDto, locale: AppLocale = 'uk') {
     const page = query.page ?? 1;
     const limit = query.limit ?? 12;
     const skip = (page - 1) * limit;
@@ -138,7 +149,9 @@ export class CatalogService {
     const pages = Math.ceil(total / limit) || 1;
 
     return {
-      items: items.map((p) => this.withDefaultImage(p)),
+      items: items.map((p) =>
+        localizeProductRecord(this.withDefaultImage(p) as Record<string, unknown>, locale),
+      ),
       page,
       limit,
       total,
@@ -146,7 +159,7 @@ export class CatalogService {
     };
   }
 
-  async getProductBySlugOrId(slugOrId: string) {
+  async getProductBySlugOrId(slugOrId: string, locale: AppLocale = 'uk') {
     let product = await this.prisma.product.findUnique({
       where: { slug: slugOrId },
       include: {
@@ -184,15 +197,40 @@ export class CatalogService {
     if (!product) {
       throw new NotFoundException('Product not found');
     }
-    return {
+    const withImage = {
       ...this.withDefaultImage(product),
       categories: product.categories.map((pc) => pc.category),
     };
+    return localizeProductRecord(withImage as Record<string, unknown>, locale);
   }
 
-  /** @deprecated Use getProductBySlugOrId */
-  async getProductBySlug(slug: string) {
-    return this.getProductBySlugOrId(slug);
+  async getAllReviews(limit = 50, locale: AppLocale = 'uk') {
+    const take = Math.min(Math.max(limit, 1), 100);
+    const reviews = await this.prisma.review.findMany({
+      take,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        product: { select: { name: true, slug: true } },
+      },
+    });
+
+    return {
+      items: reviews.map((r) => ({
+        id: r.id,
+        productId: r.productId,
+        productName: localizeProductRecord(
+          r.product as Record<string, unknown>,
+          locale,
+        ).name as string,
+        productSlug: r.product.slug,
+        rating: r.rating,
+        title: r.title,
+        text: r.text,
+        authorName: r.authorName,
+        createdAt: r.createdAt,
+      })),
+      total: reviews.length,
+    };
   }
 
   async getReviews(slug: string) {

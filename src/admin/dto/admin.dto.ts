@@ -266,6 +266,11 @@ export class UploadImageDto {
   dataUri: string;
 }
 
+export class UploadPdfDto {
+  @IsString()
+  dataUri: string;
+}
+
 export class CreateAdminCategoryDto {
   @IsString()
   name: string;
@@ -325,11 +330,23 @@ export class UpsertBannerDto {
 
   @IsOptional()
   @IsString()
+  titleEn?: string | null;
+
+  @IsOptional()
+  @IsString()
   titleSub?: string | null;
 
   @IsOptional()
   @IsString()
+  titleSubEn?: string | null;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  descriptionEn?: string | null;
 
   @IsOptional()
   @IsString()
@@ -378,6 +395,27 @@ export class UpsertAboutBlockDto {
   @IsOptional()
   @IsNumber()
   order?: number;
+}
+
+export class UpsertFaqItemDto {
+  @IsString()
+  title: string;
+
+  @IsOptional()
+  @IsString()
+  body?: string;
+
+  @IsOptional()
+  @IsNumber()
+  order?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isSplit?: boolean;
 }
 
 export class UpdateContactSettingsDto {

@@ -8,6 +8,11 @@ import { PrismaService } from 'nestjs-prisma';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { MailService } from '../mail/mail.service';
 import { PromoCodesService } from '../promo-codes/promo-codes.service';
+import {
+  COURIER_UNAVAILABLE_MESSAGE,
+  isCourierDeliveryAvailable,
+  isCourierDeliveryMethod,
+} from './courier-delivery-hours';
 
 // Тимчасове рішення: дефолтне фото для карток, поки не налаштовані
 // завантаження/прив’язка зображень для кожного товару окремо.
@@ -32,6 +37,13 @@ export class OrdersService {
   async create(userId: string, dto: CreateOrderDto) {
     if (!dto.termsAccepted) {
       throw new BadRequestException('Необхідно прийняти умови оферти');
+    }
+
+    if (
+      isCourierDeliveryMethod(dto.deliveryMethod) &&
+      !isCourierDeliveryAvailable()
+    ) {
+      throw new BadRequestException(COURIER_UNAVAILABLE_MESSAGE);
     }
 
     let items: { productId: string; quantity: number }[];
@@ -87,7 +99,7 @@ export class OrdersService {
     let promoCodeValue: string | null = null;
 
     if (dto.promoCode?.trim()) {
-      const promo = await this.promoCodes.assertValid(dto.promoCode);
+      const promo = await this.promoCodes.assertValid(dto.promoCode, userId);
       const base = Math.max(0, subtotal - saleDiscount);
       promoDiscount = Math.round((base * promo.discountPercent) / 100);
       promoId = promo.id;
@@ -105,6 +117,7 @@ export class OrdersService {
           total,
           firstName: dto.firstName,
           lastName: dto.lastName,
+          middleName: dto.middleName,
           phone: dto.phone,
           email: dto.email,
           recipientFirstName: dto.recipientFirstName,
@@ -145,10 +158,7 @@ export class OrdersService {
         },
       });
       if (promoId) {
-        await tx.promoCode.update({
-          where: { id: promoId },
-          data: { usageCount: { increment: 1 } },
-        });
+        await this.promoCodes.recordUsage(tx, promoId, userId, ord.id);
       }
       await tx.cartItem.deleteMany({ where: { userId } });
       return ord;
@@ -201,9 +211,18 @@ export class OrdersService {
       cod: 'Накладений платіж',
       bacs: 'Оплата на рахунок',
     };
+    const deliveryLabels: Record<string, string> = {
+      courier: 'Курʼєр (Uklon)',
+      uklon: 'Курʼєр (Uklon)',
+      nova_poshta: 'Нова Пошта',
+    };
     const paymentLabel =
       (order.paymentMethod && paymentLabels[order.paymentMethod]) ||
       order.paymentMethod ||
+      'Не вказано';
+    const deliveryLabel =
+      (order.deliveryMethod && deliveryLabels[order.deliveryMethod]) ||
+      order.deliveryMethod ||
       'Не вказано';
     const phoneLabel = order.phone || order.recipientPhone || 'Телефон не вказано';
 
@@ -221,6 +240,7 @@ export class OrdersService {
       recipientLastName: order.recipientLastName,
       recipientPhone: order.recipientPhone,
       deliveryMethod: order.deliveryMethod,
+      deliveryMethodLabel: deliveryLabel,
       deliveryAddress,
       deliveryCity: order.deliveryCity,
       comment: order.comment,

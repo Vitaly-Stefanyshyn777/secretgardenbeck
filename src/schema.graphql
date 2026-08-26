@@ -32,8 +32,9 @@ A field whose value is a JSON Web Token (JWT): https://jwt.io/introduction.
 scalar JWT
 
 input LoginInput {
-  email: String!
+  email: String
   password: String!
+  phone: String
 }
 
 type Mutation {
@@ -119,6 +120,7 @@ input SignupInput {
   email: String!
   firstname: String
   lastname: String
+  middlename: String
   password: String!
   phone: String
 }
@@ -140,6 +142,7 @@ input UpdateUserInput {
   firstname: String
   instagram: String
   lastname: String
+  middlename: String
   phone: String
   telegram: String
 }
@@ -152,6 +155,7 @@ type User {
   id: ID!
   instagram: String
   lastname: String
+  middlename: String
   phone: String
   posts: [Post!]
   role: Role!

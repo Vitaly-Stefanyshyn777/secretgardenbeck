@@ -1,30 +1,71 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CatalogService } from './catalog.service';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { resolveRequestLocale } from '../common/i18n/localized-fields';
 
 @ApiTags('catalog')
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
 
+  private locale(
+    acceptLanguage?: string,
+    queryLang?: string,
+  ) {
+    return resolveRequestLocale(acceptLanguage, queryLang);
+  }
+
   @Get('categories')
   @ApiOperation({ summary: 'Get catalog categories tree' })
-  getCategories() {
-    return this.catalogService.getCategories();
+  getCategories(
+    @Headers('accept-language') acceptLanguage?: string,
+    @Query('lang') lang?: string,
+  ) {
+    return this.catalogService.getCategories(
+      this.locale(acceptLanguage, lang),
+    );
+  }
+
+  @Get('reviews')
+  @ApiOperation({ summary: 'Get all product reviews (for homepage etc.)' })
+  getAllReviews(
+    @Query('limit') limit?: string,
+    @Headers('accept-language') acceptLanguage?: string,
+    @Query('lang') lang?: string,
+  ) {
+    const parsed = limit ? parseInt(limit, 10) : 50;
+    return this.catalogService.getAllReviews(
+      Number.isFinite(parsed) ? parsed : 50,
+      this.locale(acceptLanguage, lang),
+    );
   }
 
   @Get('products')
   @ApiOperation({ summary: 'Get products list with filters' })
-  getProducts(@Query() query: ProductQueryDto) {
-    return this.catalogService.getProducts(query);
+  getProducts(
+    @Query() query: ProductQueryDto,
+    @Headers('accept-language') acceptLanguage?: string,
+    @Query('lang') queryLang?: string,
+  ) {
+    return this.catalogService.getProducts(
+      query,
+      this.locale(acceptLanguage, queryLang),
+    );
   }
 
   @Get('products/:slugOrId')
   @ApiOperation({ summary: 'Get product details by slug or id' })
-  getProduct(@Param('slugOrId') slugOrId: string) {
-    return this.catalogService.getProductBySlugOrId(slugOrId);
+  getProduct(
+    @Param('slugOrId') slugOrId: string,
+    @Headers('accept-language') acceptLanguage?: string,
+    @Query('lang') lang?: string,
+  ) {
+    return this.catalogService.getProductBySlugOrId(
+      slugOrId,
+      this.locale(acceptLanguage, lang),
+    );
   }
 
   @Get('products/:slug/reviews')
@@ -42,4 +83,3 @@ export class CatalogController {
     return this.catalogService.addReview(slug, data);
   }
 }
-

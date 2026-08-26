@@ -13,6 +13,7 @@ Table User {
   telegram String
   firstname String
   lastname String
+  middlename String
   role Role [not null]
   posts Post [not null]
   orders Order [not null]
@@ -20,6 +21,15 @@ Table User {
   viewedProducts UserViewedProduct [not null]
   cartItems CartItem [not null]
   wishlist UserWishlist [not null]
+  promoUsages PromoCodeUsage [not null]
+}
+
+Table PasswordReset {
+  id String [pk]
+  email String [not null]
+  code String [not null]
+  expiresAt DateTime [not null]
+  createdAt DateTime [default: `now()`, not null]
 }
 
 Table CartItem {
@@ -197,6 +207,7 @@ Table Order {
   status String [not null, default: 'NEW']
   firstName String
   lastName String
+  middleName String
   phone String
   email String
   recipientFirstName String
@@ -225,6 +236,23 @@ Table PromoCode {
   expiresAt DateTime
   usageLimit Int
   usageCount Int [not null, default: 0]
+  usages PromoCodeUsage [not null]
+}
+
+Table PromoCodeUsage {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  promoCodeId String [not null]
+  promoCode PromoCode [not null]
+  userId String [not null]
+  user User [not null]
+  orderId String
+
+  indexes {
+    (promoCodeId, userId) [unique]
+  }
+
+  Note: 'Один промокод — один раз на користувача (код можна шарити між акаунтами)'
 }
 
 Table OrderItem {
@@ -257,8 +285,11 @@ Table Banner {
   updatedAt DateTime [not null]
   order Int [not null, default: 0]
   title String [not null, default: '']
+  titleEn String
   titleSub String
+  titleSubEn String
   description String [not null, default: '']
+  descriptionEn String
   imageUrl String [not null]
   mobileImageUrl String
   isActive Boolean [not null, default: true]
@@ -278,6 +309,17 @@ Table AboutBlock {
   links Json [note: 'JSON: [{ "label": "Instagram", "url": "https://...", "kind": "instagram" }]']
 }
 
+Table FaqItem {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  order Int [not null, default: 0]
+  title String [not null]
+  body String [not null, default: '', note: 'Абзаци через \n\n']
+  isActive Boolean [not null, default: true]
+  isSplit Boolean [not null, default: false, note: 'Розбити текст на колонки (як у дизайні для довгих карток)']
+}
+
 Table ContactSettings {
   id String [pk, default: 'default']
   updatedAt DateTime [not null]
@@ -293,8 +335,8 @@ Table ContactSettings {
   instagramLabel String
   telegramUrls Json [not null, default: '[]', note: 'JSON string[] URLs']
   telegramLabels Json [note: 'JSON string[] labels']
-  mapLat Float [not null, default: 48.4647, note: 'Широта / довгота для Google Maps embed']
-  mapLng Float [not null, default: 35.0462]
+  mapLat Float [not null, default: 48.463662, note: 'Широта / довгота для Google Maps embed']
+  mapLng Float [not null, default: 35.046347]
   mapZoom Int [not null, default: 17]
   mapEmbedUrl String [note: 'Якщо задано — використовується напряму як src iframe']
   venuePhotoUrl String
@@ -351,6 +393,10 @@ Ref: ProductCategory.productId > Product.id
 Ref: ProductCategory.categoryId > Category.id
 
 Ref: Order.userId > User.id
+
+Ref: PromoCodeUsage.promoCodeId > PromoCode.id [delete: Cascade]
+
+Ref: PromoCodeUsage.userId > User.id [delete: Cascade]
 
 Ref: OrderItem.orderId > Order.id
 

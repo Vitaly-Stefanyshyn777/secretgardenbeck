@@ -10,9 +10,11 @@ import { JwtStrategy } from './jwt.strategy';
 import { SecurityConfig } from '../common/configs/config.interface';
 import { AuthController } from './auth.controller';
 import { RolesGuard } from './roles.guard';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
+    MailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: async (configService: ConfigService) => {

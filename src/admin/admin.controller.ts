@@ -29,8 +29,10 @@ import {
   UpdateAdminUserRoleDto,
   UpdateContactSettingsDto,
   UploadImageDto,
+  UploadPdfDto,
   UpsertAboutBlockDto,
   UpsertBannerDto,
+  UpsertFaqItemDto,
   UpsertVenuePhotoDto,
 } from './dto/admin.dto';
 import { PromoCodesService } from '../promo-codes/promo-codes.service';
@@ -65,6 +67,15 @@ export class AdminController {
   @ApiOperation({ summary: 'Upload product image (data URI → Cloudinary)' })
   upload(@Body() body: UploadImageDto) {
     return this.adminService.uploadImage(body.dataUri);
+  }
+
+  @Post('upload-pdf')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Upload PDF certificate (data URI → Cloudinary raw)' })
+  uploadPdf(@Body() body: UploadPdfDto) {
+    return this.adminService.uploadPdf(body.dataUri);
   }
 
   // Products
@@ -272,6 +283,39 @@ export class AdminController {
   @Roles(Role.ADMIN)
   deleteAboutBlock(@Param('id') id: string) {
     return this.adminService.deleteAboutBlock(id);
+  }
+
+  // FAQ
+  @Get('faq')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  listFaq() {
+    return this.adminService.listFaqItems();
+  }
+
+  @Post('faq')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  createFaq(@Body() dto: UpsertFaqItemDto) {
+    return this.adminService.createFaqItem(dto);
+  }
+
+  @Patch('faq/:id')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  updateFaq(@Param('id') id: string, @Body() dto: UpsertFaqItemDto) {
+    return this.adminService.updateFaqItem(id, dto);
+  }
+
+  @Delete('faq/:id')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  deleteFaq(@Param('id') id: string) {
+    return this.adminService.deleteFaqItem(id);
   }
 
   // Contacts

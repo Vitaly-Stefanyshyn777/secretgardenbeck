@@ -4,6 +4,11 @@ import { AuthService } from './auth.service';
 import { LoginInput } from './dto/login.input';
 import { SignupInput } from './dto/signup.input';
 import { RefreshTokenInput } from './dto/refresh-token.input';
+import {
+  ResetPasswordDto,
+  SetPasswordDto,
+  ValidateResetCodeDto,
+} from './dto/reset-password.dto';
 import { Token } from './models/token.model';
 
 @ApiTags('auth')
@@ -30,10 +35,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Log in user' })
   @ApiResponse({ status: 200, type: Token })
-  async login(@Body() { email, password }: LoginInput): Promise<Token> {
+  async login(@Body() data: LoginInput): Promise<Token> {
     const { accessToken, refreshToken } = await this.authService.login(
-      email.toLowerCase(),
-      password,
+      {
+        email: data.email?.toLowerCase(),
+        phone: data.phone,
+      },
+      data.password,
     );
 
     return {
@@ -48,6 +56,30 @@ export class AuthController {
   @ApiResponse({ status: 200, type: Token })
   async refresh(@Body() { token }: RefreshTokenInput): Promise<Token> {
     return this.authService.refreshToken(token);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send password reset code to email' })
+  async resetPassword(@Body() { email }: ResetPasswordDto) {
+    await this.authService.requestPasswordReset(email);
+    return { ok: true };
+  }
+
+  @Post('validate-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Validate password reset code' })
+  async validateCode(@Body() { email, code }: ValidateResetCodeDto) {
+    await this.authService.validateResetCode(email, code);
+    return { ok: true };
+  }
+
+  @Post('set-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Set new password using reset code' })
+  async setPassword(@Body() { email, code, password }: SetPasswordDto) {
+    await this.authService.setPasswordWithCode(email, code, password);
+    return { ok: true };
   }
 }
 

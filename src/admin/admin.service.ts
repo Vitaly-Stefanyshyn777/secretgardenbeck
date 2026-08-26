@@ -18,9 +18,12 @@ import {
   UpdateContactSettingsDto,
   UpsertAboutBlockDto,
   UpsertBannerDto,
+  UpsertFaqItemDto,
   UpsertVenuePhotoDto,
 } from './dto/admin.dto';
 import {
+  AppLocale,
+  localizeBannerRecord,
   resolveCategoryI18nInput,
   resolveProductI18nInput,
 } from '../common/i18n/localized-fields';
@@ -38,7 +41,10 @@ export class AdminService {
   ) {}
 
   async login(email: string, password: string) {
-    const tokens = await this.authService.login(email.toLowerCase(), password);
+    const tokens = await this.authService.login(
+      { email: email.toLowerCase() },
+      password,
+    );
     const user = await this.authService.getUserFromToken(tokens.accessToken);
 
     if (!user || user.role !== Role.ADMIN) {
@@ -70,6 +76,13 @@ export class AdminService {
 
   async uploadImage(dataUri: string) {
     return this.cloudinary.uploadDataUri(dataUri, 'secretgarden/products');
+  }
+
+  async uploadPdf(dataUri: string) {
+    return this.cloudinary.uploadRawDataUri(
+      dataUri,
+      'secretgarden/certificates',
+    );
   }
 
   /** Як у catalog: imageUrls → mainImageUrl → дефолт Cloudinary */
@@ -631,8 +644,11 @@ export class AdminService {
     return this.prisma.banner.create({
       data: {
         title: dto.title ?? '',
+        titleEn: dto.titleEn ?? null,
         titleSub: dto.titleSub ?? null,
+        titleSubEn: dto.titleSubEn ?? null,
         description: dto.description ?? '',
+        descriptionEn: dto.descriptionEn ?? null,
         imageUrl: dto.imageUrl,
         mobileImageUrl: dto.mobileImageUrl ?? null,
         order: dto.order ?? count,
@@ -648,9 +664,12 @@ export class AdminService {
       where: { id },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
+        ...(dto.titleEn !== undefined ? { titleEn: dto.titleEn } : {}),
         ...(dto.titleSub !== undefined ? { titleSub: dto.titleSub } : {}),
-        ...(dto.description !== undefined
-          ? { description: dto.description }
+        ...(dto.titleSubEn !== undefined ? { titleSubEn: dto.titleSubEn } : {}),
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.descriptionEn !== undefined
+          ? { descriptionEn: dto.descriptionEn }
           : {}),
         ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
         ...(dto.mobileImageUrl !== undefined
@@ -718,6 +737,100 @@ export class AdminService {
     return { ok: true };
   }
 
+  // ─── Content: FAQ ───
+
+  private readonly defaultFaqItems = [
+    {
+      order: 0,
+      title: 'Що таке CBD ?',
+      body: [
+        'CBD - це природна сполука, що міститься в рослині конопель. Він не має психоактивної дії та не викликає стану сп’яніння. CBD досліджують щодо можливого впливу на зниження стресу, покращення сну, загальне розслаблення.',
+        'Ми пропонуємо лише легальну продукцію, яка відповідає чинному законодавству України.',
+      ].join('\n\n'),
+      isSplit: false,
+    },
+    {
+      order: 1,
+      title: 'Чим CBD відрізняється від THC ?',
+      body: [
+        'CBD та THC - це різні компоненти рослини конопель, які по різному впливають на організм.',
+        'THC має психоактивний ефект - тобто змінює стан свідомості та може викликати відчуття сп’яніння.',
+        'CBD не має психоактивної дії та не викликає “ефекту ейфорії”. Його зазвичай обирають ті, хто шукає розслаблення без зміни свідомості.',
+      ].join('\n\n'),
+      isSplit: false,
+    },
+    {
+      order: 2,
+      title: 'В чому користь мухоморів? ?',
+      body: [
+        'Мухомори традиційно використовувалися в різних культурах у вигляді висушеної сировини. Їм приписують вплив на релаксацію, покращення настрою, загальне самопочуття.',
+        '⚠️ Водночас важливо розуміти, що реакція організму індивідуальна. Перед вживанням будь-яких продуктів рослинного походження рекомендується ознайомитись з інформацією та дотримуватись обережності.',
+      ].join('\n\n'),
+      isSplit: true,
+    },
+    {
+      order: 3,
+      title: 'Чи є у нас джойнти ?',
+      body: [
+        'Ні. Ми не продаємо джойнти або будь-яку продукцію сумнівного походження.',
+        'Також ми не маємо відношення до інших магазинів чи сторонніх продавців.',
+        'Ми працюємо виключно з перевіреною продукцією та дотримуємося чинного законодавства',
+      ].join('\n\n'),
+      isSplit: true,
+    },
+  ];
+
+  async listFaqItems(activeOnly = false) {
+    const count = await this.prisma.faqItem.count();
+    if (count === 0) {
+      await this.prisma.faqItem.createMany({
+        data: this.defaultFaqItems.map((item) => ({
+          ...item,
+          isActive: true,
+        })),
+      });
+    }
+    return this.prisma.faqItem.findMany({
+      where: activeOnly ? { isActive: true } : undefined,
+      orderBy: { order: 'asc' },
+    });
+  }
+
+  async createFaqItem(dto: UpsertFaqItemDto) {
+    const count = await this.prisma.faqItem.count();
+    return this.prisma.faqItem.create({
+      data: {
+        title: dto.title,
+        body: dto.body ?? '',
+        order: dto.order ?? count,
+        isActive: dto.isActive ?? true,
+        isSplit: dto.isSplit ?? false,
+      },
+    });
+  }
+
+  async updateFaqItem(id: string, dto: Partial<UpsertFaqItemDto>) {
+    const existing = await this.prisma.faqItem.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('FAQ item not found');
+    return this.prisma.faqItem.update({
+      where: { id },
+      data: {
+        ...(dto.title !== undefined ? { title: dto.title } : {}),
+        ...(dto.body !== undefined ? { body: dto.body } : {}),
+        ...(dto.order !== undefined ? { order: dto.order } : {}),
+        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+        ...(dto.isSplit !== undefined ? { isSplit: dto.isSplit } : {}),
+      },
+    });
+  }
+
+  async deleteFaqItem(id: string) {
+    await this.prisma.faqItem.delete({ where: { id } }).catch(() => {
+      throw new NotFoundException('FAQ item not found');
+    });
+    return { ok: true };
+  }
+
   // ─── Content: Contacts ───
 
   async getContactSettings() {
@@ -741,8 +854,8 @@ export class AdminService {
           'https://t.me/secret_garden_manager',
         ],
         telegramLabels: ['secret_Garden_shop420', 'secret_garden_manager'],
-        mapLat: 48.4647,
-        mapLng: 35.0462,
+        mapLat: 48.463662,
+        mapLng: 35.046347,
         mapZoom: 17,
         venuePhotoUrl: '/фото.png',
       },
@@ -852,21 +965,26 @@ export class AdminService {
     return { ok: true };
   }
 
-  async getPublicContent() {
-    const [banners, aboutBlocks, contacts, venuePhotos] = await Promise.all([
-      this.listBanners(true),
-      this.listAboutBlocks(),
-      this.getContactSettings(),
-      this.listVenuePhotos(true),
-    ]);
+  async getPublicContent(locale: AppLocale = 'uk') {
+    const [banners, aboutBlocks, contacts, venuePhotos, faqItems] =
+      await Promise.all([
+        this.listBanners(true),
+        this.listAboutBlocks(),
+        this.getContactSettings(),
+        this.listVenuePhotos(true),
+        this.listFaqItems(true),
+      ]);
     return {
-      banners,
+      banners: banners.map((b) =>
+        localizeBannerRecord(b as Record<string, unknown>, locale),
+      ),
       aboutBlocks,
       contacts: {
         ...contacts,
         mapSrc: this.buildMapEmbedUrl(contacts),
       },
       venuePhotos,
+      faqItems,
     };
   }
 }

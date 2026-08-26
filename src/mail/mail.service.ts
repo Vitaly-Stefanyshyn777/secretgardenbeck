@@ -108,6 +108,52 @@ export class MailService {
       );
     }
   }
+
+  async sendPasswordResetCode(email: string, code: string) {
+    const subject = 'Secret Garden · код для відновлення пароля';
+    const html = `
+      <h2>Відновлення пароля</h2>
+      <p>Ваш код: <b>${escapeHtml(code)}</b></p>
+      <p>Код дійсний 15 хвилин.</p>
+    `;
+    const text = `Код для відновлення пароля Secret Garden: ${code}`;
+
+    const apiKey = this.config.get<string>('RESEND_API_KEY');
+    if (!apiKey) {
+      this.logger.warn(
+        `Password reset mail skipped (no RESEND_API_KEY). Code for ${email}: ${code}`,
+      );
+      return;
+    }
+
+    try {
+      const from =
+        this.config.get<string>('MAIL_FROM') ||
+        'Secret Garden <onboarding@resend.dev>';
+
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ from, to: [email], subject, html, text }),
+      });
+
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`Resend ${res.status}: ${body}`);
+      }
+
+      this.logger.log(`Password reset email sent → ${email}`);
+    } catch (err) {
+      this.logger.error(
+        `Failed to send password reset email to ${email}`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw err;
+    }
+  }
 }
 
 function escapeHtml(value: string) {

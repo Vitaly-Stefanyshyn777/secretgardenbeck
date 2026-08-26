@@ -7,6 +7,16 @@ export function parseAcceptLanguage(header?: string): AppLocale {
   return 'uk';
 }
 
+export function resolveRequestLocale(
+  acceptLanguage?: string,
+  queryLang?: string,
+): AppLocale {
+  const q = queryLang?.trim().toLowerCase() ?? '';
+  if (q.startsWith('en')) return 'en';
+  if (q.startsWith('uk')) return 'uk';
+  return parseAcceptLanguage(acceptLanguage);
+}
+
 export function pickLocalizedField(
   record: Record<string, unknown>,
   field: string,
@@ -78,5 +88,51 @@ export function resolveCategoryI18nInput(dto: {
     name,
     nameUk,
     nameEn: dto.nameEn ?? null,
+  };
+}
+
+export function localizeProductRecord<
+  T extends Record<string, unknown>,
+>(record: T, locale: AppLocale): T {
+  return {
+    ...record,
+    name: pickLocalizedField(record, 'name', locale),
+    shortDescription: pickLocalizedField(record, 'shortDescription', locale),
+    description: pickLocalizedField(record, 'description', locale),
+    label: pickLocalizedField(record, 'label', locale),
+  };
+}
+
+export function localizeCategoryRecord<
+  T extends Record<string, unknown> & { children?: T[] },
+>(record: T, locale: AppLocale): T {
+  return {
+    ...record,
+    name: pickLocalizedField(record, 'name', locale),
+    children: record.children?.map((child) =>
+      localizeCategoryRecord(child, locale),
+    ),
+  };
+}
+
+export function localizeBannerRecord<
+  T extends Record<string, unknown>,
+>(record: T, locale: AppLocale): T {
+  const titleSubEn = record.titleSubEn;
+  const titleSub = record.titleSub;
+  const localizedTitleSub =
+    locale === 'en' &&
+    typeof titleSubEn === 'string' &&
+    titleSubEn.trim()
+      ? titleSubEn
+      : typeof titleSub === 'string'
+        ? titleSub
+        : null;
+
+  return {
+    ...record,
+    title: pickLocalizedField(record, 'title', locale),
+    titleSub: localizedTitleSub,
+    description: pickLocalizedField(record, 'description', locale),
   };
 }
