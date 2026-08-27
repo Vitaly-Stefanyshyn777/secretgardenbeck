@@ -1,3 +1,5 @@
+import { translateUkToEn } from './uk-en-translate';
+
 export type AppLocale = 'uk' | 'en';
 
 export function parseAcceptLanguage(header?: string): AppLocale {
@@ -25,16 +27,21 @@ export function pickLocalizedField(
   const enKey = `${field}En`;
   const ukKey = `${field}Uk`;
 
+  const asString = (v: unknown) =>
+    typeof v === 'string' ? v : v == null ? '' : String(v);
+
   if (locale === 'en') {
-    const enValue = record[enKey];
-    if (typeof enValue === 'string' && enValue.trim()) return enValue;
+    const enValue = asString(record[enKey]).trim();
+    if (enValue) return enValue;
+    const ukValue = asString(record[ukKey]).trim();
+    const base = asString(record[field]).trim();
+    const source = ukValue || base;
+    return source ? translateUkToEn(source) : '';
   }
 
-  const ukValue = record[ukKey];
-  if (typeof ukValue === 'string' && ukValue.trim()) return ukValue;
-
-  const base = record[field];
-  return typeof base === 'string' ? base : '';
+  const ukValue = asString(record[ukKey]).trim();
+  if (ukValue) return ukValue;
+  return asString(record[field]);
 }
 
 export function resolveProductI18nInput(dto: {
@@ -94,21 +101,100 @@ export function resolveCategoryI18nInput(dto: {
 export function localizeProductRecord<
   T extends Record<string, unknown>,
 >(record: T, locale: AppLocale): T {
-  return {
+  const localized: Record<string, unknown> = {
     ...record,
     name: pickLocalizedField(record, 'name', locale),
     shortDescription: pickLocalizedField(record, 'shortDescription', locale),
     description: pickLocalizedField(record, 'description', locale),
     label: pickLocalizedField(record, 'label', locale),
   };
+
+  if (Array.isArray(record.categories)) {
+    localized.categories = record.categories.map((c) =>
+      c && typeof c === 'object'
+        ? localizeCategoryRecord(c as Record<string, unknown>, locale)
+        : c,
+    );
+  }
+
+  if (Array.isArray(record.characteristics)) {
+    localized.characteristics = record.characteristics.map((ch) => {
+      if (!ch || typeof ch !== 'object') return ch;
+      const row = ch as Record<string, unknown>;
+      return {
+        ...row,
+        name: pickLocalizedField(row, 'name', locale) || translateMaybe(row.name, locale),
+        value: pickLocalizedField(row, 'value', locale) || translateMaybe(row.value, locale),
+      };
+    });
+  }
+
+  if (Array.isArray(record.descriptionBlocks)) {
+    localized.descriptionBlocks = record.descriptionBlocks.map((block) => {
+      if (!block || typeof block !== 'object') return block;
+      const row = block as Record<string, unknown>;
+      const content = row.content;
+      const items = row.items;
+      return {
+        ...row,
+        content:
+          typeof content === 'string' ? translateMaybe(content, locale) : content,
+        items: Array.isArray(items)
+          ? items.map((it) =>
+              typeof it === 'string' ? translateMaybe(it, locale) : it,
+            )
+          : items,
+      };
+    });
+  }
+
+  return localized as T;
+}
+
+function translateMaybe(value: unknown, locale: AppLocale): string {
+  const text = typeof value === 'string' ? value : value == null ? '' : String(value);
+  if (!text) return text;
+  return locale === 'en' ? translateUkToEn(text) : text;
+}
+
+function localizeFilterRecord(
+  filter: Record<string, unknown>,
+  locale: AppLocale,
+): Record<string, unknown> {
+  const values = Array.isArray(filter.values)
+    ? filter.values.map((v) => {
+        if (!v || typeof v !== 'object') return v;
+        const row = v as Record<string, unknown>;
+        return {
+          ...row,
+          value: pickLocalizedField(row, 'value', locale) || translateMaybe(row.value, locale),
+          name: pickLocalizedField(row, 'name', locale) || translateMaybe(row.name, locale),
+        };
+      })
+    : filter.values;
+
+  return {
+    ...filter,
+    name: pickLocalizedField(filter, 'name', locale) || translateMaybe(filter.name, locale),
+    values,
+  };
 }
 
 export function localizeCategoryRecord<
   T extends Record<string, unknown> & { children?: T[] },
 >(record: T, locale: AppLocale): T {
+  const filters = Array.isArray(record.filters)
+    ? record.filters.map((f) =>
+        f && typeof f === 'object'
+          ? localizeFilterRecord(f as Record<string, unknown>, locale)
+          : f,
+      )
+    : record.filters;
+
   return {
     ...record,
     name: pickLocalizedField(record, 'name', locale),
+    filters,
     children: record.children?.map((child) =>
       localizeCategoryRecord(child, locale),
     ),
@@ -126,7 +212,9 @@ export function localizeBannerRecord<
     titleSubEn.trim()
       ? titleSubEn
       : typeof titleSub === 'string'
-        ? titleSub
+        ? locale === 'en'
+          ? translateUkToEn(titleSub)
+          : titleSub
         : null;
 
   return {
@@ -135,4 +223,56 @@ export function localizeBannerRecord<
     titleSub: localizedTitleSub,
     description: pickLocalizedField(record, 'description', locale),
   };
+}
+
+export function localizeFaqRecord<
+  T extends Record<string, unknown>,
+>(record: T, locale: AppLocale): T {
+  return {
+    ...record,
+    title: pickLocalizedField(record, 'title', locale),
+    body: pickLocalizedField(record, 'body', locale),
+  };
+}
+
+export function localizeAboutRecord<
+  T extends Record<string, unknown>,
+>(record: T, locale: AppLocale): T {
+  return {
+    ...record,
+    title: pickLocalizedField(record, 'title', locale),
+    body: pickLocalizedField(record, 'body', locale),
+    ctaLabel: pickLocalizedField(record, 'ctaLabel', locale),
+  };
+}
+
+
+export function localizeContactsRecord<
+  T extends Record<string, unknown>,
+>(record: T, locale: AppLocale): T {
+  const fields = [
+    'introTitle',
+    'introText',
+    'scheduleTitle',
+    'daysOff',
+    'holidayNote',
+    'address',
+  ] as const;
+
+  const next: Record<string, unknown> = { ...record };
+  for (const field of fields) {
+    const enKey = `${field}En`;
+    const current = record[field];
+    if (locale === 'en') {
+      const enVal = record[enKey];
+      if (typeof enVal === 'string' && enVal.trim()) {
+        next[field] = enVal;
+      } else if (typeof current === 'string' && current.trim()) {
+        next[field] = translateUkToEn(current);
+      }
+    } else if (typeof current === 'string') {
+      next[field] = current;
+    }
+  }
+  return next as T;
 }

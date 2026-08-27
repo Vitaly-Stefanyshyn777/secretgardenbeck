@@ -19,11 +19,13 @@ import {
   UpsertAboutBlockDto,
   UpsertBannerDto,
   UpsertFaqItemDto,
-  UpsertVenuePhotoDto,
 } from './dto/admin.dto';
 import {
   AppLocale,
+  localizeAboutRecord,
   localizeBannerRecord,
+  localizeContactsRecord,
+  localizeFaqRecord,
   resolveCategoryI18nInput,
   resolveProductI18nInput,
 } from '../common/i18n/localized-fields';
@@ -699,12 +701,18 @@ export class AdminService {
     return this.prisma.aboutBlock.create({
       data: {
         title: dto.title,
+        titleEn: dto.titleEn ?? null,
         body: dto.body ?? '',
+        bodyEn: dto.bodyEn ?? null,
         imageUrl: dto.imageUrl ?? null,
         imageLeft: dto.imageLeft ?? true,
+        buttonsLeft: dto.buttonsLeft ?? true,
         ctaLabel: dto.ctaLabel ?? null,
+        ctaLabelEn: dto.ctaLabelEn ?? null,
         ctaUrl: dto.ctaUrl ?? null,
         links: (dto.links ?? []) as Prisma.InputJsonValue,
+        textPadding: dto.textPadding ?? 0,
+        textBlocks: (dto.textBlocks ?? null) as Prisma.InputJsonValue,
         order: dto.order ?? count,
       },
     });
@@ -717,15 +725,23 @@ export class AdminService {
       where: { id },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
+        ...(dto.titleEn !== undefined ? { titleEn: dto.titleEn } : {}),
         ...(dto.body !== undefined ? { body: dto.body } : {}),
+        ...(dto.bodyEn !== undefined ? { bodyEn: dto.bodyEn } : {}),
         ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
         ...(dto.imageLeft !== undefined ? { imageLeft: dto.imageLeft } : {}),
+        ...(dto.buttonsLeft !== undefined ? { buttonsLeft: dto.buttonsLeft } : {}),
         ...(dto.ctaLabel !== undefined ? { ctaLabel: dto.ctaLabel } : {}),
+        ...(dto.ctaLabelEn !== undefined ? { ctaLabelEn: dto.ctaLabelEn } : {}),
         ...(dto.ctaUrl !== undefined ? { ctaUrl: dto.ctaUrl } : {}),
         ...(dto.links !== undefined
           ? { links: dto.links as Prisma.InputJsonValue }
           : {}),
         ...(dto.order !== undefined ? { order: dto.order } : {}),
+        ...(dto.textPadding !== undefined ? { textPadding: dto.textPadding } : {}),
+        ...(dto.textBlocks !== undefined
+          ? { textBlocks: dto.textBlocks as Prisma.InputJsonValue }
+          : {}),
       },
     });
   }
@@ -743,38 +759,60 @@ export class AdminService {
     {
       order: 0,
       title: 'Що таке CBD ?',
+      titleEn: 'What is CBD?',
       body: [
         'CBD - це природна сполука, що міститься в рослині конопель. Він не має психоактивної дії та не викликає стану сп’яніння. CBD досліджують щодо можливого впливу на зниження стресу, покращення сну, загальне розслаблення.',
         'Ми пропонуємо лише легальну продукцію, яка відповідає чинному законодавству України.',
+      ].join('\n\n'),
+      bodyEn: [
+        'CBD is a natural compound found in the hemp plant. It has no psychoactive effect and does not cause intoxication. CBD is studied for possible effects on stress reduction, sleep improvement, and general relaxation.',
+        'We only offer legal products that comply with current Ukrainian legislation.',
       ].join('\n\n'),
       isSplit: false,
     },
     {
       order: 1,
       title: 'Чим CBD відрізняється від THC ?',
+      titleEn: 'How is CBD different from THC?',
       body: [
         'CBD та THC - це різні компоненти рослини конопель, які по різному впливають на організм.',
         'THC має психоактивний ефект - тобто змінює стан свідомості та може викликати відчуття сп’яніння.',
         'CBD не має психоактивної дії та не викликає “ефекту ейфорії”. Його зазвичай обирають ті, хто шукає розслаблення без зміни свідомості.',
+      ].join('\n\n'),
+      bodyEn: [
+        'CBD and THC are different compounds of the hemp plant that affect the body differently.',
+        'THC has a psychoactive effect — it alters the state of consciousness and may cause a feeling of intoxication.',
+        'CBD has no psychoactive effect and does not cause a “euphoria effect”. It is usually chosen by those who seek relaxation without altering consciousness.',
       ].join('\n\n'),
       isSplit: false,
     },
     {
       order: 2,
       title: 'В чому користь мухоморів? ?',
+      titleEn: 'What are the benefits of fly agarics?',
       body: [
         'Мухомори традиційно використовувалися в різних культурах у вигляді висушеної сировини. Їм приписують вплив на релаксацію, покращення настрою, загальне самопочуття.',
         '⚠️ Водночас важливо розуміти, що реакція організму індивідуальна. Перед вживанням будь-яких продуктів рослинного походження рекомендується ознайомитись з інформацією та дотримуватись обережності.',
+      ].join('\n\n'),
+      bodyEn: [
+        'Fly agarics have traditionally been used in various cultures as dried raw material. They are credited with effects on relaxation, mood improvement, and overall wellbeing.',
+        '⚠️ At the same time it is important to understand that individual body response may vary. Before use of any plant-based products it is recommended to review the information and follow precautions.',
       ].join('\n\n'),
       isSplit: true,
     },
     {
       order: 3,
       title: 'Чи є у нас джойнти ?',
+      titleEn: 'Do you sell joints?',
       body: [
         'Ні. Ми не продаємо джойнти або будь-яку продукцію сумнівного походження.',
         'Також ми не маємо відношення до інших магазинів чи сторонніх продавців.',
         'Ми працюємо виключно з перевіреною продукцією та дотримуємося чинного законодавства',
+      ].join('\n\n'),
+      bodyEn: [
+        'No. We do not sell joints or any products of dubious origin.',
+        'We are also not affiliated with other stores or third-party sellers.',
+        'We work exclusively with verified products and comply with current legislation',
       ].join('\n\n'),
       isSplit: true,
     },
@@ -789,6 +827,21 @@ export class AdminService {
           isActive: true,
         })),
       });
+    } else {
+      // Доповнюємо EN для старих записів без перекладу
+      for (const def of this.defaultFaqItems) {
+        if (!def.titleEn && !def.bodyEn) continue;
+        await this.prisma.faqItem.updateMany({
+          where: {
+            title: def.title,
+            OR: [{ titleEn: null }, { bodyEn: null }],
+          },
+          data: {
+            ...(def.titleEn ? { titleEn: def.titleEn } : {}),
+            ...(def.bodyEn ? { bodyEn: def.bodyEn } : {}),
+          },
+        });
+      }
     }
     return this.prisma.faqItem.findMany({
       where: activeOnly ? { isActive: true } : undefined,
@@ -801,7 +854,9 @@ export class AdminService {
     return this.prisma.faqItem.create({
       data: {
         title: dto.title,
+        titleEn: dto.titleEn ?? null,
         body: dto.body ?? '',
+        bodyEn: dto.bodyEn ?? null,
         order: dto.order ?? count,
         isActive: dto.isActive ?? true,
         isSplit: dto.isSplit ?? false,
@@ -816,7 +871,9 @@ export class AdminService {
       where: { id },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
+        ...(dto.titleEn !== undefined ? { titleEn: dto.titleEn } : {}),
         ...(dto.body !== undefined ? { body: dto.body } : {}),
+        ...(dto.bodyEn !== undefined ? { bodyEn: dto.bodyEn } : {}),
         ...(dto.order !== undefined ? { order: dto.order } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
         ...(dto.isSplit !== undefined ? { isSplit: dto.isSplit } : {}),
@@ -911,80 +968,52 @@ export class AdminService {
     });
   }
 
-  buildMapEmbedUrl(settings: {
-    mapEmbedUrl?: string | null;
-    mapLat: number;
-    mapLng: number;
-    mapZoom: number;
-  }) {
-    if (settings.mapEmbedUrl?.trim()) return settings.mapEmbedUrl.trim();
-    return `https://www.google.com/maps?q=${settings.mapLat},${settings.mapLng}&z=${settings.mapZoom}&output=embed`;
-  }
-
-  // ─── Content: Venue photos ───
-
-  async listVenuePhotos(activeOnly = false) {
-    return this.prisma.venuePhoto.findMany({
-      where: activeOnly ? { isActive: true } : undefined,
-      orderBy: { order: 'asc' },
-    });
-  }
-
-  async createVenuePhoto(dto: UpsertVenuePhotoDto) {
-    const count = await this.prisma.venuePhoto.count();
-    return this.prisma.venuePhoto.create({
-      data: {
-        imageUrl: dto.imageUrl,
-        title: dto.title ?? null,
-        alt: dto.alt ?? null,
-        order: dto.order ?? count,
-        isActive: dto.isActive ?? true,
-      },
-    });
-  }
-
-  async updateVenuePhoto(id: string, dto: Partial<UpsertVenuePhotoDto>) {
-    const existing = await this.prisma.venuePhoto.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Venue photo not found');
-    return this.prisma.venuePhoto.update({
-      where: { id },
-      data: {
-        ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
-        ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.alt !== undefined ? { alt: dto.alt } : {}),
-        ...(dto.order !== undefined ? { order: dto.order } : {}),
-        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-      },
-    });
-  }
-
-  async deleteVenuePhoto(id: string) {
-    await this.prisma.venuePhoto.delete({ where: { id } }).catch(() => {
-      throw new NotFoundException('Venue photo not found');
-    });
-    return { ok: true };
+  buildMapEmbedUrl(
+    settings: {
+      mapEmbedUrl?: string | null;
+      mapLat: number;
+      mapLng: number;
+      mapZoom: number;
+    },
+    locale: 'uk' | 'en' = 'uk',
+  ) {
+    const hl = locale === 'en' ? 'en' : 'uk';
+    if (settings.mapEmbedUrl?.trim()) {
+      try {
+        const url = new URL(settings.mapEmbedUrl.trim());
+        url.searchParams.set('hl', hl);
+        return url.toString();
+      } catch {
+        return settings.mapEmbedUrl.trim();
+      }
+    }
+    return `https://www.google.com/maps?q=${settings.mapLat},${settings.mapLng}&z=${settings.mapZoom}&hl=${hl}&output=embed`;
   }
 
   async getPublicContent(locale: AppLocale = 'uk') {
-    const [banners, aboutBlocks, contacts, venuePhotos, faqItems] =
-      await Promise.all([
-        this.listBanners(true),
-        this.listAboutBlocks(),
-        this.getContactSettings(),
-        this.listVenuePhotos(true),
-        this.listFaqItems(true),
-      ]);
+    const [banners, aboutBlocks, contacts, faqItems] = await Promise.all([
+      this.listBanners(true),
+      this.listAboutBlocks(),
+      this.getContactSettings(),
+      this.listFaqItems(true),
+    ]);
     return {
       banners: banners.map((b) =>
         localizeBannerRecord(b as Record<string, unknown>, locale),
       ),
-      aboutBlocks,
+      aboutBlocks: aboutBlocks.map((b) =>
+        localizeAboutRecord(b as Record<string, unknown>, locale),
+      ),
       contacts: {
-        ...contacts,
-        mapSrc: this.buildMapEmbedUrl(contacts),
+        ...localizeContactsRecord(
+          contacts as Record<string, unknown>,
+          locale,
+        ),
+        mapSrc: this.buildMapEmbedUrl(contacts, locale),
       },
-      venuePhotos,
-      faqItems,
+      faqItems: faqItems.map((b) =>
+        localizeFaqRecord(b as Record<string, unknown>, locale),
+      ),
     };
   }
 }

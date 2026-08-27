@@ -1,7 +1,13 @@
 import { Controller, Get, Headers, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminService } from '../admin/admin.service';
-import { resolveRequestLocale, localizeBannerRecord } from '../common/i18n/localized-fields';
+import {
+  resolveRequestLocale,
+  localizeBannerRecord,
+  localizeFaqRecord,
+  localizeAboutRecord,
+  localizeContactsRecord,
+} from '../common/i18n/localized-fields';
 
 @ApiTags('content')
 @Controller('content')
@@ -30,26 +36,41 @@ export class ContentController {
   }
 
   @Get('about')
-  listAbout() {
-    return this.adminService.listAboutBlocks();
+  listAbout(
+    @Headers('accept-language') acceptLanguage?: string,
+    @Query('lang') lang?: string,
+  ) {
+    const locale = resolveRequestLocale(acceptLanguage, lang);
+    return this.adminService.listAboutBlocks().then((rows) =>
+      rows.map((b) => localizeAboutRecord(b as Record<string, unknown>, locale)),
+    );
   }
 
   @Get('contacts')
-  async getContacts() {
+  async getContacts(
+    @Headers('accept-language') acceptLanguage?: string,
+    @Query('lang') lang?: string,
+  ) {
+    const locale = resolveRequestLocale(acceptLanguage, lang);
     const contacts = await this.adminService.getContactSettings();
+    const localized = localizeContactsRecord(
+      contacts as Record<string, unknown>,
+      locale,
+    );
     return {
-      ...contacts,
-      mapSrc: this.adminService.buildMapEmbedUrl(contacts),
+      ...localized,
+      mapSrc: this.adminService.buildMapEmbedUrl(contacts, locale),
     };
   }
 
-  @Get('venue-photos')
-  listVenuePhotos() {
-    return this.adminService.listVenuePhotos(true);
-  }
-
   @Get('faq')
-  listFaq() {
-    return this.adminService.listFaqItems(true);
+  listFaq(
+    @Headers('accept-language') acceptLanguage?: string,
+    @Query('lang') lang?: string,
+  ) {
+    const locale = resolveRequestLocale(acceptLanguage, lang);
+    return this.adminService.listFaqItems(true).then((rows) =>
+      rows.map((b) => localizeFaqRecord(b as Record<string, unknown>, locale)),
+    );
   }
 }

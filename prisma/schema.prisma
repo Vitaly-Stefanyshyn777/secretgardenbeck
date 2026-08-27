@@ -311,14 +311,23 @@ model AboutBlock {
   updatedAt DateTime @updatedAt
   order     Int      @default(0)
   title     String
+  titleEn   String?
   /// Абзаци тексту, розділені \n\n
   body      String   @default("")
+  bodyEn    String?
   imageUrl  String?
   imageLeft Boolean  @default(true)
+  /// Кнопки зліва (true) або справа (false) у блоці
+  buttonsLeft Boolean @default(true)
   ctaLabel  String?
+  ctaLabelEn String?
   ctaUrl    String?
-  /// JSON: [{ "label": "Instagram", "url": "https://...", "kind": "instagram" }]
+  /// JSON: [{ "label": "Instagram", "url": "https://...", "kind": "instagram"|"telegram"|"link"|"pdf" }]
   links     Json?
+  /// Відступ тексту (px) навколо текстового блоку
+  textPadding Int @default(0)
+  /// JSON: [{ "text": "...", "gap": 16 }] — кілька текстів зі своїм відступом після
+  textBlocks Json?
 }
 
 model FaqItem {
@@ -327,8 +336,10 @@ model FaqItem {
   updatedAt DateTime @updatedAt
   order     Int      @default(0)
   title     String
+  titleEn   String?
   /// Абзаци через \n\n
   body      String   @default("")
+  bodyEn    String?
   isActive  Boolean  @default(true)
   /// Розбити текст на колонки (як у дизайні для довгих карток)
   isSplit   Boolean  @default(false)
@@ -360,15 +371,4 @@ model ContactSettings {
   venuePhotoUrl  String?
   certificateUrl String?
   donationUrl    String?
-}
-
-model VenuePhoto {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  order     Int      @default(0)
-  imageUrl  String
-  title     String?
-  alt       String?
-  isActive  Boolean  @default(true)
 }

@@ -371,7 +371,15 @@ export class UpsertAboutBlockDto {
 
   @IsOptional()
   @IsString()
+  titleEn?: string | null;
+
+  @IsOptional()
+  @IsString()
   body?: string;
+
+  @IsOptional()
+  @IsString()
+  bodyEn?: string | null;
 
   @IsOptional()
   @IsString()
@@ -382,8 +390,16 @@ export class UpsertAboutBlockDto {
   imageLeft?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  buttonsLeft?: boolean;
+
+  @IsOptional()
   @IsString()
   ctaLabel?: string | null;
+
+  @IsOptional()
+  @IsString()
+  ctaLabelEn?: string | null;
 
   @IsOptional()
   @IsString()
@@ -394,16 +410,31 @@ export class UpsertAboutBlockDto {
 
   @IsOptional()
   @IsNumber()
+  textPadding?: number;
+
+  @IsOptional()
+  textBlocks?: Array<{ text: string; gap?: number }>;
+
+  @IsOptional()
+  @IsNumber()
   order?: number;
 }
 
 export class UpsertFaqItemDto {
   @IsString()
-  title: string;
+  title!: string;
+
+  @IsOptional()
+  @IsString()
+  titleEn?: string | null;
 
   @IsOptional()
   @IsString()
   body?: string;
+
+  @IsOptional()
+  @IsString()
+  bodyEn?: string | null;
 
   @IsOptional()
   @IsNumber()
@@ -496,27 +527,6 @@ export class UpdateContactSettingsDto {
   @IsOptional()
   @IsString()
   donationUrl?: string | null;
-}
-
-export class UpsertVenuePhotoDto {
-  @IsString()
-  imageUrl: string;
-
-  @IsOptional()
-  @IsString()
-  title?: string | null;
-
-  @IsOptional()
-  @IsString()
-  alt?: string | null;
-
-  @IsOptional()
-  @IsNumber()
-  order?: number;
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
 }
 
 export class CreateAdminPromoCodeDto {

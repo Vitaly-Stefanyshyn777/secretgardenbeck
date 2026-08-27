@@ -301,12 +301,18 @@ Table AboutBlock {
   updatedAt DateTime [not null]
   order Int [not null, default: 0]
   title String [not null]
+  titleEn String
   body String [not null, default: '', note: 'Абзаци тексту, розділені \n\n']
+  bodyEn String
   imageUrl String
   imageLeft Boolean [not null, default: true]
+  buttonsLeft Boolean [not null, default: true, note: 'Кнопки зліва (true) або справа (false) у блоці']
   ctaLabel String
+  ctaLabelEn String
   ctaUrl String
-  links Json [note: 'JSON: [{ "label": "Instagram", "url": "https://...", "kind": "instagram" }]']
+  links Json [note: 'JSON: [{ "label": "Instagram", "url": "https://...", "kind": "instagram"|"telegram"|"link"|"pdf" }]']
+  textPadding Int [not null, default: 0, note: 'Відступ тексту (px) навколо текстового блоку']
+  textBlocks Json [note: 'JSON: [{ "text": "...", "gap": 16 }] — кілька текстів зі своїм відступом після']
 }
 
 Table FaqItem {
@@ -315,7 +321,9 @@ Table FaqItem {
   updatedAt DateTime [not null]
   order Int [not null, default: 0]
   title String [not null]
+  titleEn String
   body String [not null, default: '', note: 'Абзаци через \n\n']
+  bodyEn String
   isActive Boolean [not null, default: true]
   isSplit Boolean [not null, default: false, note: 'Розбити текст на колонки (як у дизайні для довгих карток)']
 }
@@ -342,17 +350,6 @@ Table ContactSettings {
   venuePhotoUrl String
   certificateUrl String
   donationUrl String
-}
-
-Table VenuePhoto {
-  id String [pk]
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime [not null]
-  order Int [not null, default: 0]
-  imageUrl String [not null]
-  title String
-  alt String
-  isActive Boolean [not null, default: true]
 }
 
 Enum Role {

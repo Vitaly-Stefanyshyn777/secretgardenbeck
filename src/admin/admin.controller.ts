@@ -33,7 +33,6 @@ import {
   UpsertAboutBlockDto,
   UpsertBannerDto,
   UpsertFaqItemDto,
-  UpsertVenuePhotoDto,
 } from './dto/admin.dto';
 import { PromoCodesService } from '../promo-codes/promo-codes.service';
 
@@ -333,39 +332,6 @@ export class AdminController {
   @Roles(Role.ADMIN)
   updateContacts(@Body() dto: UpdateContactSettingsDto) {
     return this.adminService.updateContactSettings(dto);
-  }
-
-  // Venue photos
-  @Get('venue-photos')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.ADMIN)
-  listVenuePhotos() {
-    return this.adminService.listVenuePhotos();
-  }
-
-  @Post('venue-photos')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.ADMIN)
-  createVenuePhoto(@Body() dto: UpsertVenuePhotoDto) {
-    return this.adminService.createVenuePhoto(dto);
-  }
-
-  @Patch('venue-photos/:id')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.ADMIN)
-  updateVenuePhoto(@Param('id') id: string, @Body() dto: UpsertVenuePhotoDto) {
-    return this.adminService.updateVenuePhoto(id, dto);
-  }
-
-  @Delete('venue-photos/:id')
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.ADMIN)
-  deleteVenuePhoto(@Param('id') id: string) {
-    return this.adminService.deleteVenuePhoto(id);
   }
 
   @Get('promo-codes')

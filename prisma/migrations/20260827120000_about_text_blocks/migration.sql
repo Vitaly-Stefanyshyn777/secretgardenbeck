@@ -1,0 +1,1 @@
+ALTER TABLE "AboutBlock" ADD COLUMN IF NOT EXISTS "textBlocks" JSONB;
