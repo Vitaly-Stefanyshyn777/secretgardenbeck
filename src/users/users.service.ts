@@ -20,6 +20,13 @@ export class UsersService {
     });
   }
 
+  updateAgeVerified(userId: string, verified: boolean) {
+    return this.prisma.user.update({
+      data: { ageVerified: verified },
+      where: { id: userId },
+    });
+  }
+
   async changePassword(
     userId: string,
     userPassword: string,

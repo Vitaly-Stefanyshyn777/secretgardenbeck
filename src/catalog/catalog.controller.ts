@@ -17,6 +17,12 @@ export class CatalogController {
     return resolveRequestLocale(acceptLanguage, queryLang);
   }
 
+  private parseAgeVerified(header?: string): boolean | null {
+    if (header === 'true') return true;
+    if (header === 'false') return false;
+    return null;
+  }
+
   @Get('categories')
   @ApiOperation({ summary: 'Get catalog categories tree' })
   getCategories(
@@ -48,10 +54,12 @@ export class CatalogController {
     @Query() query: ProductQueryDto,
     @Headers('accept-language') acceptLanguage?: string,
     @Query('lang') queryLang?: string,
+    @Headers('x-age-verified') ageVerifiedHeader?: string,
   ) {
     return this.catalogService.getProducts(
       query,
       this.locale(acceptLanguage, queryLang),
+      this.parseAgeVerified(ageVerifiedHeader),
     );
   }
 
@@ -61,10 +69,12 @@ export class CatalogController {
     @Param('slugOrId') slugOrId: string,
     @Headers('accept-language') acceptLanguage?: string,
     @Query('lang') lang?: string,
+    @Headers('x-age-verified') ageVerifiedHeader?: string,
   ) {
     return this.catalogService.getProductBySlugOrId(
       slugOrId,
       this.locale(acceptLanguage, lang),
+      this.parseAgeVerified(ageVerifiedHeader),
     );
   }
 

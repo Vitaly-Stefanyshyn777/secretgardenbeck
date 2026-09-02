@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { UsersService } from './users.service';
 import { UpdateUserInput } from './dto/update-user.input';
+import { UpdateAgeVerificationDto } from './dto/update-age-verification.dto';
 import { User } from './models/user.model';
 import { ChangePasswordInput } from './dto/change-password.input';
 
@@ -23,6 +24,15 @@ export class UsersController {
   @ApiOperation({ summary: 'Update current user profile' })
   updateProfile(@Req() req: any, @Body() data: UpdateUserInput): Promise<User> {
     return this.usersService.updateUser(req.user.id, data);
+  }
+
+  @Patch('age-verification')
+  @ApiOperation({ summary: 'Save age verification status (18+)' })
+  updateAgeVerification(
+    @Req() req: any,
+    @Body() data: UpdateAgeVerificationDto,
+  ): Promise<User> {
+    return this.usersService.updateAgeVerified(req.user.id, data.verified);
   }
 
   @Patch('password')

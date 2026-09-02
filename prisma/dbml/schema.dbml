@@ -15,6 +15,7 @@ Table User {
   lastname String
   middlename String
   role Role [not null]
+  ageVerified Boolean [note: 'null = не підтверджено, true = 18+, false = менше 18']
   posts Post [not null]
   orders Order [not null]
   reviews Review [not null]
@@ -153,6 +154,7 @@ Table Product {
   wishlist UserWishlist [not null]
   ratingAverage Float [default: 0]
   ratingCount Int [not null, default: 0]
+  ageRestricted Boolean [not null, default: false, note: 'Товар 18+ — доступний лише після підтвердження віку']
 }
 
 Table ProductDescriptionBlock {

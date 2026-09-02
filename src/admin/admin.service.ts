@@ -265,6 +265,7 @@ export class AdminService {
               })),
             }
           : undefined,
+        ageRestricted: dto.ageRestricted ?? false,
       },
       include: {
         categories: {
@@ -341,6 +342,9 @@ export class AdminService {
           ? { labelUk: dto.labelUk }
           : {}),
       ...(dto.labelEn !== undefined ? { labelEn: dto.labelEn } : {}),
+      ...(dto.ageRestricted !== undefined
+        ? { ageRestricted: dto.ageRestricted }
+        : {}),
     };
 
     if (dto.imageUrls !== undefined || dto.mainImageUrl !== undefined) {

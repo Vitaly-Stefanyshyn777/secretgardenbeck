@@ -148,6 +148,8 @@ input UpdateUserInput {
 }
 
 type User {
+  ageVerified: Boolean
+
   """Identifies the date and time when the object was created."""
   createdAt: DateTime!
   email: String!

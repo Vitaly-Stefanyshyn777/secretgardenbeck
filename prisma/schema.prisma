@@ -24,6 +24,8 @@ model User {
   lastname  String?
   middlename String?
   role      Role
+  /// null = не підтверджено, true = 18+, false = менше 18
+  ageVerified Boolean?
   posts     Post[]
   orders    Order[]
   reviews   Review[]
@@ -158,6 +160,8 @@ model Product {
   wishlist           UserWishlist[]
   ratingAverage      Float?   @default(0)
   ratingCount        Int      @default(0)
+  /// Товар 18+ — доступний лише після підтвердження віку
+  ageRestricted      Boolean  @default(false)
 }
 
 model ProductDescriptionBlock {

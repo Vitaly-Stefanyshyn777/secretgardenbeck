@@ -149,6 +149,10 @@ export class CreateAdminProductDto {
   @IsArray()
   @IsString({ each: true })
   filterValueIds?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  ageRestricted?: boolean;
 }
 
 export class UpdateAdminProductDto {
@@ -259,6 +263,10 @@ export class UpdateAdminProductDto {
   @IsArray()
   @IsString({ each: true })
   filterValueIds?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  ageRestricted?: boolean;
 }
 
 export class UploadImageDto {

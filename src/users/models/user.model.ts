@@ -37,6 +37,9 @@ export class User extends BaseModel {
   @Field(() => Role)
   role: Role;
 
+  @Field(() => Boolean, { nullable: true })
+  ageVerified?: boolean | null;
+
   @Field(() => [Post], { nullable: true })
   posts?: [Post] | null;
 

@@ -17,6 +17,33 @@ const TEMP_DEFAULT_PRODUCT_IMAGE_URL =
 export class CatalogService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** true = 18+ підтверджено, false = відмова, null/undefined = ще не відповів */
+  private applyAgeRestriction(
+    where: Record<string, unknown>,
+    ageVerified?: boolean | null,
+  ) {
+    if (ageVerified === true) return;
+    if (ageVerified === false) {
+      where.id = '__age_blocked__';
+      return;
+    }
+    const cond = { ageRestricted: false };
+    if (Array.isArray(where.AND)) {
+      where.AND = [...where.AND, cond];
+    } else {
+      where.AND = [cond];
+    }
+  }
+
+  private isProductAccessible(
+    ageRestricted: boolean,
+    ageVerified?: boolean | null,
+  ) {
+    if (ageVerified === true) return true;
+    if (ageVerified === false) return false;
+    return !ageRestricted;
+  }
+
   private withDefaultImage<T extends {
     mainImageUrl?: string | null;
     imageUrls?: string[];
@@ -66,10 +93,24 @@ export class CatalogService {
     );
   }
 
-  async getProducts(query: ProductQueryDto, locale: AppLocale = 'uk') {
+  async getProducts(
+    query: ProductQueryDto,
+    locale: AppLocale = 'uk',
+    ageVerified?: boolean | null,
+  ) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 12;
     const skip = (page - 1) * limit;
+
+    if (ageVerified === false) {
+      return {
+        items: [],
+        page,
+        limit,
+        total: 0,
+        pages: 0,
+      };
+    }
 
     const where: any = {};
 
@@ -136,6 +177,8 @@ export class CatalogService {
         : filterConditions;
     }
 
+    this.applyAgeRestriction(where, ageVerified);
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.product.findMany({
         where,
@@ -159,7 +202,11 @@ export class CatalogService {
     };
   }
 
-  async getProductBySlugOrId(slugOrId: string, locale: AppLocale = 'uk') {
+  async getProductBySlugOrId(
+    slugOrId: string,
+    locale: AppLocale = 'uk',
+    ageVerified?: boolean | null,
+  ) {
     let product = await this.prisma.product.findUnique({
       where: { slug: slugOrId },
       include: {
@@ -195,6 +242,14 @@ export class CatalogService {
       });
     }
     if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    if (
+      !this.isProductAccessible(
+        Boolean((product as { ageRestricted?: boolean }).ageRestricted),
+        ageVerified,
+      )
+    ) {
       throw new NotFoundException('Product not found');
     }
     const withImage = {
