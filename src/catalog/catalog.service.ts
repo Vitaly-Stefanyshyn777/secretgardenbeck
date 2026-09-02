@@ -7,6 +7,7 @@ import {
   localizeCategoryRecord,
   localizeProductRecord,
 } from '../common/i18n/localized-fields';
+import { decodeSlugParam } from '../common/utils/slug.utils';
 
 // Тимчасове рішення: дефолтне фото для карток, поки не налаштовані
 // завантаження/прив’язка зображень для кожного товару окремо.
@@ -23,10 +24,6 @@ export class CatalogService {
     ageVerified?: boolean | null,
   ) {
     if (ageVerified === true) return;
-    if (ageVerified === false) {
-      where.id = '__age_blocked__';
-      return;
-    }
     const cond = { ageRestricted: false };
     if (Array.isArray(where.AND)) {
       where.AND = [...where.AND, cond];
@@ -39,9 +36,8 @@ export class CatalogService {
     ageRestricted: boolean,
     ageVerified?: boolean | null,
   ) {
-    if (ageVerified === true) return true;
-    if (ageVerified === false) return false;
-    return !ageRestricted;
+    if (!ageRestricted) return true;
+    return ageVerified === true;
   }
 
   private withDefaultImage<T extends {
@@ -207,25 +203,39 @@ export class CatalogService {
     locale: AppLocale = 'uk',
     ageVerified?: boolean | null,
   ) {
-    let product = await this.prisma.product.findUnique({
-      where: { slug: slugOrId },
-      include: {
-        categories: {
-          include: {
-            category: true,
+    const decoded = decodeSlugParam(slugOrId);
+    const lookupKeys = Array.from(
+      new Set([decoded, slugOrId.trim()].filter(Boolean)),
+    );
+
+    let product = null as Awaited<
+      ReturnType<typeof this.prisma.product.findUnique>
+    >;
+
+    for (const key of lookupKeys) {
+      if (!key) continue;
+      product = await this.prisma.product.findUnique({
+        where: { slug: key },
+        include: {
+          categories: {
+            include: {
+              category: true,
+            },
+          },
+          characteristics: {
+            orderBy: { order: 'asc' },
+          },
+          descriptionBlocks: {
+            orderBy: { order: 'asc' },
           },
         },
-        characteristics: {
-          orderBy: { order: 'asc' },
-        },
-        descriptionBlocks: {
-          orderBy: { order: 'asc' },
-        },
-      },
-    });
+      });
+      if (product) break;
+    }
+
     if (!product) {
       product = await this.prisma.product.findUnique({
-        where: { id: slugOrId },
+        where: { id: decoded || slugOrId.trim() },
         include: {
           categories: {
             include: {

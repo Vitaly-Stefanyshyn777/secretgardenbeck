@@ -29,6 +29,7 @@ import {
   resolveCategoryI18nInput,
   resolveProductI18nInput,
 } from '../common/i18n/localized-fields';
+import { normalizeProductSlug } from '../common/utils/slug.utils';
 
 /** Той самий fallback, що в CatalogService / CartService */
 const TEMP_DEFAULT_PRODUCT_IMAGE_URL =
@@ -121,6 +122,31 @@ export class AdminService {
     };
   }
 
+  private async resolveUniqueProductSlug(
+    slug: string | undefined | null,
+    fallbackName: string,
+    excludeProductId?: string,
+  ): Promise<string> {
+    let base = normalizeProductSlug(slug, fallbackName);
+    if (!base) {
+      throw new BadRequestException('Slug is required');
+    }
+
+    let candidate = base;
+    let suffix = 2;
+    while (true) {
+      const existing = await this.prisma.product.findUnique({
+        where: { slug: candidate },
+        select: { id: true },
+      });
+      if (!existing || existing.id === excludeProductId) {
+        return candidate;
+      }
+      candidate = `${base}-${suffix}`;
+      suffix += 1;
+    }
+  }
+
   /** Привʼязка категорії + підкатегорії до товару (для фільтрів на сайті). */
   private resolveCategoryLinkIds(
     categoryId?: string | null,
@@ -208,13 +234,14 @@ export class AdminService {
       dto.subcategoryId,
     );
     const i18n = resolveProductI18nInput(dto);
+    const slug = await this.resolveUniqueProductSlug(dto.slug, i18n.name);
 
     return this.prisma.product.create({
       data: {
         name: i18n.name,
         nameEn: i18n.nameEn,
         nameUk: i18n.nameUk,
-        slug: dto.slug,
+        slug,
         price: new Prisma.Decimal(dto.price),
         salePrice:
           dto.salePrice === undefined || dto.salePrice === null
@@ -281,7 +308,9 @@ export class AdminService {
   }
 
   async updateProduct(id: string, dto: UpdateAdminProductDto) {
-    await this.getProduct(id);
+    const existing = await this.getProduct(id);
+    const resolvedName =
+      dto.name ?? (existing as { name?: string }).name ?? '';
 
     const data: Prisma.ProductUpdateInput = {
       ...(dto.name !== undefined
@@ -293,7 +322,15 @@ export class AdminService {
           ? { nameUk: dto.nameUk }
           : {}),
       ...(dto.nameEn !== undefined ? { nameEn: dto.nameEn } : {}),
-      ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
+      ...(dto.slug !== undefined
+        ? {
+            slug: await this.resolveUniqueProductSlug(
+              dto.slug,
+              resolvedName,
+              id,
+            ),
+          }
+        : {}),
       ...(dto.price !== undefined
         ? { price: new Prisma.Decimal(dto.price) }
         : {}),
