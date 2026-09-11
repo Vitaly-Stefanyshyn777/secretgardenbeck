@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'nestjs-prisma';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -13,6 +14,24 @@ import { decodeSlugParam } from '../common/utils/slug.utils';
 // завантаження/прив’язка зображень для кожного товару окремо.
 const TEMP_DEFAULT_PRODUCT_IMAGE_URL =
   'https://res.cloudinary.com/dhcqvesyr/image/upload/v1777366777/Rectangle_4_rbucbx.png';
+
+const productDetailInclude = {
+  categories: {
+    include: {
+      category: true,
+    },
+  },
+  characteristics: {
+    orderBy: { order: 'asc' as const },
+  },
+  descriptionBlocks: {
+    orderBy: { order: 'asc' as const },
+  },
+} satisfies Prisma.ProductInclude;
+
+type ProductDetail = Prisma.ProductGetPayload<{
+  include: typeof productDetailInclude;
+}>;
 
 @Injectable()
 export class CatalogService {
@@ -208,27 +227,13 @@ export class CatalogService {
       new Set([decoded, slugOrId.trim()].filter(Boolean)),
     );
 
-    let product = null as Awaited<
-      ReturnType<typeof this.prisma.product.findUnique>
-    >;
+    let product: ProductDetail | null = null;
 
     for (const key of lookupKeys) {
       if (!key) continue;
       product = await this.prisma.product.findUnique({
         where: { slug: key },
-        include: {
-          categories: {
-            include: {
-              category: true,
-            },
-          },
-          characteristics: {
-            orderBy: { order: 'asc' },
-          },
-          descriptionBlocks: {
-            orderBy: { order: 'asc' },
-          },
-        },
+        include: productDetailInclude,
       });
       if (product) break;
     }
@@ -236,19 +241,7 @@ export class CatalogService {
     if (!product) {
       product = await this.prisma.product.findUnique({
         where: { id: decoded || slugOrId.trim() },
-        include: {
-          categories: {
-            include: {
-              category: true,
-            },
-          },
-          characteristics: {
-            orderBy: { order: 'asc' },
-          },
-          descriptionBlocks: {
-            orderBy: { order: 'asc' },
-          },
-        },
+        include: productDetailInclude,
       });
     }
     if (!product) {
