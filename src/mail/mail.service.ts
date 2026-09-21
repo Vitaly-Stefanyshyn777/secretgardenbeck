@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as https from 'https';
 
 export type OrderMailPayload = {
   id: string;
@@ -86,19 +87,13 @@ export class MailService {
         this.config.get<string>('MAIL_FROM') ||
         'Secret Garden <onboarding@resend.dev>';
 
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ from, to: [to], subject, html, text }),
+      await this.sendResendEmail(apiKey, {
+        from,
+        to: [to],
+        subject,
+        html,
+        text,
       });
-
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`Resend ${res.status}: ${body}`);
-      }
 
       this.logger.log(`Order email sent → ${to}`);
     } catch (err) {
@@ -131,19 +126,13 @@ export class MailService {
         this.config.get<string>('MAIL_FROM') ||
         'Secret Garden <onboarding@resend.dev>';
 
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ from, to: [email], subject, html, text }),
+      await this.sendResendEmail(apiKey, {
+        from,
+        to: [email],
+        subject,
+        html,
+        text,
       });
-
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`Resend ${res.status}: ${body}`);
-      }
 
       this.logger.log(`Password reset email sent → ${email}`);
     } catch (err) {
@@ -153,6 +142,52 @@ export class MailService {
       );
       throw err;
     }
+  }
+
+  /** Працює і на Node 16 (без глобального fetch). */
+  private sendResendEmail(
+    apiKey: string,
+    payload: {
+      from: string;
+      to: string[];
+      subject: string;
+      html: string;
+      text: string;
+    },
+  ): Promise<void> {
+    const body = JSON.stringify(payload);
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(
+        {
+          hostname: 'api.resend.com',
+          path: '/emails',
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body),
+          },
+        },
+        (res) => {
+          const chunks: Buffer[] = [];
+          res.on('data', (chunk) => chunks.push(chunk));
+          res.on('end', () => {
+            const text = Buffer.concat(chunks).toString('utf8');
+            const status = res.statusCode ?? 0;
+            if (status < 200 || status >= 300) {
+              reject(new Error(`Resend ${status}: ${text}`));
+              return;
+            }
+            resolve();
+          });
+        },
+      );
+
+      req.on('error', reject);
+      req.write(body);
+      req.end();
+    });
   }
 }
 
