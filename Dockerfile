@@ -1,4 +1,4 @@
-FROM node:16 AS builder
+FROM node:20 AS builder
 
 # Create app directory
 WORKDIR /app
@@ -14,7 +14,7 @@ COPY . .
 
 RUN npm run build
 
-FROM node:16
+FROM node:20
 
 WORKDIR /app
 

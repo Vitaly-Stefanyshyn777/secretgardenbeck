@@ -4,6 +4,9 @@
   "description": "NestJS Prisma Client Starter Project",
   "author": "Marc Stammerjohann",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "keywords": [
     "nestjs",
     "prisma",
