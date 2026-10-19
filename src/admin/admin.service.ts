@@ -474,7 +474,25 @@ export class AdminService {
 
   async deleteProduct(id: string) {
     await this.getProduct(id);
-    await this.prisma.product.delete({ where: { id } });
+
+    const orderItemsCount = await this.prisma.orderItem.count({
+      where: { productId: id },
+    });
+    if (orderItemsCount > 0) {
+      throw new BadRequestException(
+        'Неможливо видалити товар: він є в замовленнях. Зніміть його з наявності замість видалення.',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.productCharacteristic.deleteMany({ where: { productId: id } });
+      await tx.productDescriptionBlock.deleteMany({ where: { productId: id } });
+      await tx.productFilterValue.deleteMany({ where: { productId: id } });
+      await tx.productCategory.deleteMany({ where: { productId: id } });
+      await tx.review.deleteMany({ where: { productId: id } });
+      await tx.product.delete({ where: { id } });
+    });
+
     return { ok: true };
   }
 
