@@ -85,7 +85,7 @@ export class CreateOrderDto {
   @Min(0)
   deliveryCost?: number;
 
-  /** wayforpay | cod | bacs | ... */
+  /** raiffeisen | liqpay | wayforpay | cod | bacs | ... */
   @IsOptional()
   @IsString()
   paymentMethod?: string;

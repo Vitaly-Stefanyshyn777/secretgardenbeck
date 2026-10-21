@@ -19,7 +19,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { OrdersModule } from './orders/orders.module';
 import { AdminModule } from './admin/admin.module';
 import { ContentModule } from './content/content.module';
-import { WayforpayModule } from './wayforpay/wayforpay.module';
+import { RaiffeisenModule } from './raiffeisen/raiffeisen.module';
 import { PromoCodesModule } from './promo-codes/promo-codes.module';
 
 @Module({
@@ -54,7 +54,7 @@ import { PromoCodesModule } from './promo-codes/promo-codes.module';
     OrdersModule,
     AdminModule,
     ContentModule,
-    WayforpayModule,
+    RaiffeisenModule,
     PromoCodesModule,
   ],
   controllers: [AppController],

@@ -132,7 +132,12 @@ export class OrdersService {
           discountAmount: discount,
           deliveryCost: delivery,
           paymentMethod: dto.paymentMethod,
-          paymentStatus: dto.paymentMethod === 'wayforpay' ? 'PENDING' : null,
+          paymentStatus:
+            dto.paymentMethod === 'raiffeisen' ||
+            dto.paymentMethod === 'liqpay' ||
+            dto.paymentMethod === 'wayforpay'
+              ? 'PENDING'
+              : null,
           promoCode: promoCodeValue,
           items: {
             create: orderItems.map((i) => ({
@@ -207,7 +212,9 @@ export class OrdersService {
         ? [order.deliveryCity, order.deliveryAddress].filter(Boolean).join(', ')
         : 'Відділення не вказано';
     const paymentLabels: Record<string, string> = {
-      wayforpay: 'Онлайн-оплата WayForPay',
+      raiffeisen: 'Інтернет-еквайринг Райффайзен Банку',
+      liqpay: 'Інтернет-еквайринг Райффайзен Банку',
+      wayforpay: 'Інтернет-еквайринг Райффайзен Банку',
       cod: 'Накладений платіж',
       bacs: 'Оплата на рахунок',
     };

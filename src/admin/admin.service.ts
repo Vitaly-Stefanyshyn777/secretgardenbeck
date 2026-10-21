@@ -947,6 +947,54 @@ export class AdminService {
     return { ok: true };
   }
 
+  // ─── Reviews ───
+
+  async listReviews() {
+    const reviews = await this.prisma.review.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        product: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    return reviews.map((r) => ({
+      id: r.id,
+      productId: r.productId,
+      productName: r.product.name,
+      productSlug: r.product.slug,
+      rating: r.rating,
+      title: r.title,
+      text: r.text,
+      authorName: r.authorName,
+      createdAt: r.createdAt,
+    }));
+  }
+
+  async deleteReview(id: string) {
+    const review = await this.prisma.review.findUnique({ where: { id } });
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    await this.prisma.review.delete({ where: { id } });
+
+    const agg = await this.prisma.review.aggregate({
+      where: { productId: review.productId },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+
+    await this.prisma.product.update({
+      where: { id: review.productId },
+      data: {
+        ratingAverage: agg._avg.rating ?? 0,
+        ratingCount: agg._count.rating,
+      },
+    });
+
+    return { ok: true };
+  }
+
   // ─── Content: Contacts ───
 
   async getContactSettings() {

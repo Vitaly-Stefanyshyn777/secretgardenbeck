@@ -317,6 +317,23 @@ export class AdminController {
     return this.adminService.deleteFaqItem(id);
   }
 
+  // Reviews
+  @Get('reviews')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  listReviews() {
+    return this.adminService.listReviews();
+  }
+
+  @Delete('reviews/:id')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN)
+  deleteReview(@Param('id') id: string) {
+    return this.adminService.deleteReview(id);
+  }
+
   // Contacts
   @Get('contacts')
   @ApiBearerAuth()
